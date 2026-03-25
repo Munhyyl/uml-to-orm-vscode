@@ -142,6 +142,9 @@ export class DiagramEditorProvider implements vscode.CustomEditorProvider<Diagra
             vscode.window.showErrorMessage(`Failed to generate code: ${err}`);
           }
           break;
+        case 'importSchema':
+          await vscode.commands.executeCommand('uml-orm-refactor.importSchema');
+          break;
         case 'exportXMI':
           try {
             const xmiSchema = document.schema;
@@ -175,6 +178,9 @@ export class DiagramEditorProvider implements vscode.CustomEditorProvider<Diagra
             vscode.window.showErrorMessage(`Failed to export XMI: ${xmiErr}`);
           }
           break;
+        case 'importXMI':
+          await vscode.commands.executeCommand('uml-orm-refactor.importXMI');
+          break;
         case 'requestConfirmation':
           try {
             const confirmLabel = typedMessage.confirmLabel || 'Delete';
@@ -184,8 +190,7 @@ export class DiagramEditorProvider implements vscode.CustomEditorProvider<Diagra
                 modal: true,
                 detail: typedMessage.detail,
               },
-              confirmLabel,
-              'Cancel'
+              confirmLabel
             );
 
             webviewPanel.webview.postMessage({

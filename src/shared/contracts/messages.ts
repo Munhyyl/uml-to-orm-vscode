@@ -5,7 +5,9 @@ export type WebviewToExtensionMessage =
   | { command: 'updateSchema'; schema: ProjectSchema }
   | { command: 'saveSchema'; schema: ProjectSchema }
   | { command: 'generateCode' }
+  | { command: 'importSchema' }
   | { command: 'exportXMI' }
+  | { command: 'importXMI' }
   | { command: 'requestConfirmation'; requestId: string; message: string; detail?: string; confirmLabel?: string };
 
 export type ExtensionToWebviewMessage =

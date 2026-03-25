@@ -14,7 +14,9 @@ interface ToolbarProps {
   onAddEntity: () => void;
   onSave: () => void;
   onGenerateCode: () => void;
+  onImportSchema: () => void;
   onExportXMI: () => void;
+  onImportXMI: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onAutoLayout: () => void;
@@ -41,7 +43,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onAddEntity,
   onSave,
   onGenerateCode,
+  onImportSchema,
   onExportXMI,
+  onImportXMI,
   onUndo,
   onRedo,
   onAutoLayout,
@@ -100,10 +104,22 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           Generate Code
         </button>
         <button
+          onClick={onImportSchema}
+          style={{ ...baseButton, backgroundColor: '#0f766e', borderColor: '#0f766e', color: '#ffffff', fontWeight: 600 }}
+        >
+          Import Schema
+        </button>
+        <button
           onClick={onExportXMI}
           style={{ ...baseButton, backgroundColor: '#b45309', borderColor: '#b45309', color: '#ffffff', fontWeight: 600 }}
         >
           Export XMI
+        </button>
+        <button
+          onClick={onImportXMI}
+          style={{ ...baseButton, backgroundColor: '#7c3aed', borderColor: '#7c3aed', color: '#ffffff', fontWeight: 600 }}
+        >
+          Import XMI
         </button>
       </div>
 

@@ -11,14 +11,15 @@ import ReactFlow, {
   Controls,
   Background,
   NodeTypes,
+  EdgeTypes,
   OnSelectionChangeParams,
-  MarkerType,
 } from 'reactflow';
 import reactFlowStyles from 'reactflow/dist/style.css';
 import { EntityNode } from './EntityNode';
 import { Toolbar } from './Toolbar';
 import { PropertyPanel } from './PropertyPanel';
-import { ProjectSchema, ClassEntity, Relation, OrmType, TargetLanguage, UmlRelationType } from '../types/schema';
+import { UmlMarkerDefs, UmlRelationEdge } from './UmlRelationEdge';
+import { ProjectSchema, ClassEntity, Relation, OrmType, TargetLanguage } from '../types/schema';
 import { createEntity, createRelation, removeEntities, removeRelations, upsertEntity, upsertRelation } from '../domain/schema/schemaOperations';
 import { useDiagramState, useClipboard, useVscodeMessaging, useConfirmation } from './useDiagramState';
 
@@ -26,65 +27,18 @@ const nodeTypes: NodeTypes = {
   entity: EntityNode,
 };
 
-// ─── UML-standard edge appearance helpers ─────────────────────────
-
-// Color per UML relationship kind
-const UML_EDGE_COLORS: Record<UmlRelationType, string> = {
-  association: '#60a5fa',   // blue
-  aggregation: '#60a5fa',   // blue
-  composition: '#60a5fa',   // blue
-  inheritance: '#4ade80',   // green
-  realization: '#4ade80',   // green
-  dependency:  '#94a3b8',   // gray
+const edgeTypes: EdgeTypes = {
+  umlRelation: UmlRelationEdge,
 };
 
-// Unicode prefix that visually hints the UML type on the edge label
-const UML_LABEL_PREFIX: Record<UmlRelationType, string> = {
-  association: '',
-  aggregation: '◇ ',
-  composition: '◆ ',
-  inheritance: '▷ ',
-  realization: '▷ ',
-  dependency:  '‹‹use›› ',
-};
-
-function buildEdgeLabel(relation: Relation): string {
-  const uml = relation.umlType || 'association';
-  const prefix = UML_LABEL_PREFIX[uml];
-
-  // Structural relationships don't have multiplicities
-  if (['inheritance', 'realization', 'dependency'].includes(uml)) {
-    const labels: Record<string, string> = {
-      inheritance: '▷ extends',
-      realization: '▷ implements',
-      dependency: '‹‹use››',
-    };
-    return labels[uml] || uml;
-  }
-
-  const src = relation.sourceMultiplicity || '1';
-  const tgt = relation.targetMultiplicity || '*';
-  return `${prefix}${src}  ──  ${tgt}`;
-}
-
-function getEdgeStyle(relation: Relation): React.CSSProperties {
-  const uml = relation.umlType || 'association';
-  const color = UML_EDGE_COLORS[uml];
-  const dashed = uml === 'dependency' || uml === 'realization';
+function createEdgeFromRelation(relation: Relation): Edge {
   return {
-    stroke: color,
-    strokeWidth: uml === 'composition' || uml === 'aggregation' ? 2.5 : 2,
-    strokeDasharray: dashed ? '6 4' : undefined,
+    id: relation.id,
+    source: relation.sourceClassId,
+    target: relation.targetClassId,
+    type: 'umlRelation',
+    data: { relation },
   };
-}
-
-function getEdgeMarker(relation: Relation): { type: MarkerType; color: string } {
-  const uml = relation.umlType || 'association';
-  const color = UML_EDGE_COLORS[uml];
-  if (uml === 'inheritance' || uml === 'realization') {
-    return { type: MarkerType.Arrow, color };
-  }
-  return { type: MarkerType.ArrowClosed, color };
 }
 
 export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ initialSchema }) => {
@@ -139,18 +93,7 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
   ), [dispatch]);
 
   const mapSchemaToEdges = useCallback((schema: ProjectSchema): Edge[] => (
-    schema.relations.map((relation) => ({
-      id: relation.id,
-      source: relation.sourceClassId,
-      target: relation.targetClassId,
-      label: buildEdgeLabel(relation),
-      type: 'smoothstep',
-      animated: false,
-      style: getEdgeStyle(relation),
-      labelStyle: { fill: '#94a3b8', fontSize: 11, fontFamily: 'monospace' },
-      labelBgStyle: { fill: '#0f172a', fillOpacity: 0.8 },
-      markerEnd: getEdgeMarker(relation),
-    }))
+    schema.relations.map((relation) => createEdgeFromRelation(relation))
   ), []);
 
   const handleCopy = useCallback(() => {
@@ -311,20 +254,7 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
       // Use explicit id so edge.id matches relation.id
       setEdges((eds) => [
         ...eds,
-        {
-          id: newRelation.id,
-          source: connection.source || '',
-          target: connection.target || '',
-          sourceHandle: connection.sourceHandle || undefined,
-          targetHandle: connection.targetHandle || undefined,
-          type: 'smoothstep',
-          animated: false,
-          style: getEdgeStyle(newRelation),
-          label: buildEdgeLabel(newRelation),
-          labelStyle: { fill: '#94a3b8', fontSize: 11, fontFamily: 'monospace' },
-          labelBgStyle: { fill: '#0f172a', fillOpacity: 0.8 },
-          markerEnd: getEdgeMarker(newRelation),
-        },
+        createEdgeFromRelation(newRelation),
       ]);
     },
     [setEdges, pushHistory, appState.schema, dispatch, postMessage]
@@ -563,6 +493,22 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
     showToast('XMI файл экспорт хийгдлээ', 'success');
   }, [appState.schema, showToast, postMessage, getVscodeApi]);
 
+  const handleImportSchema = useCallback(() => {
+    if (!getVscodeApi()?.postMessage) {
+      showToast('VS Code API боломжгүй!', 'error');
+      return;
+    }
+    postMessage('importSchema', {});
+  }, [showToast, postMessage, getVscodeApi]);
+
+  const handleImportXMI = useCallback(() => {
+    if (!getVscodeApi()?.postMessage) {
+      showToast('VS Code API боломжгүй!', 'error');
+      return;
+    }
+    postMessage('importXMI', {});
+  }, [showToast, postMessage, getVscodeApi]);
+
   return (
     <div
       style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#0b1220', color: '#e5e7eb' }}
@@ -571,7 +517,9 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
         onAddEntity={handleAddEntity}
         onSave={handleSaveSchema}
         onGenerateCode={handleGenerateCode}
+        onImportSchema={handleImportSchema}
         onExportXMI={handleExportXMI}
+        onImportXMI={handleImportXMI}
         onUndo={handleUndo}
         onRedo={handleRedo}
         onAutoLayout={handleAutoLayout}
@@ -647,10 +595,12 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
               dispatch({ type: 'DESELECT_ALL' });
             }}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             fitView
             style={{ width: '100%', height: '100%' }}
           >
-            <Background />
+            <UmlMarkerDefs />
+            <Background color="#334155" gap={24} size={1} />
             <Controls />
             <MiniMap />
           </ReactFlow>
