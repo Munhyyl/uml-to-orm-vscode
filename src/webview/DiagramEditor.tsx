@@ -18,7 +18,7 @@ import reactFlowStyles from 'reactflow/dist/style.css';
 import { EntityNode } from './EntityNode';
 import { Toolbar } from './Toolbar';
 import { PropertyPanel } from './PropertyPanel';
-import { UmlMarkerDefs, UmlRelationEdge } from './UmlRelationEdge';
+import { UmlRelationEdge } from './UmlRelationEdge';
 import { ProjectSchema, ClassEntity, Relation, OrmType, TargetLanguage } from '../types/schema';
 import { createEntity, createRelation, removeEntities, removeRelations, upsertEntity, upsertRelation } from '../domain/schema/schemaOperations';
 import { useDiagramState, useClipboard, useVscodeMessaging, useConfirmation } from './useDiagramState';
@@ -599,7 +599,6 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
             fitView
             style={{ width: '100%', height: '100%' }}
           >
-            <UmlMarkerDefs />
             <Background color="#334155" gap={24} size={1} />
             <Controls />
             <MiniMap />

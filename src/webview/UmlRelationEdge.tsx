@@ -15,9 +15,9 @@ interface EdgeVisuals {
   stroke: string;
   strokeWidth: number;
   strokeDasharray?: string;
-  markerStart?: string;
-  markerEnd?: string;
   centerLabel?: string;
+  startSymbol?: 'diamond-hollow' | 'diamond-filled';
+  endSymbol?: 'triangle-hollow' | 'triangle-open' | 'arrow-open';
 }
 
 const CENTER_LABEL_STYLE: React.CSSProperties = {
@@ -56,19 +56,19 @@ function getRelationVisuals(relation: Relation): EdgeVisuals {
       return {
         stroke: '#e2e8f0',
         strokeWidth: 2.2,
-        markerStart: 'url(#uml-aggregation)',
+        startSymbol: 'diamond-hollow',
       };
     case 'composition':
       return {
         stroke: '#f8fafc',
         strokeWidth: 2.5,
-        markerStart: 'url(#uml-composition)',
+        startSymbol: 'diamond-filled',
       };
     case 'inheritance':
       return {
         stroke: '#f8fafc',
         strokeWidth: 2.2,
-        markerEnd: 'url(#uml-inheritance)',
+        endSymbol: 'triangle-hollow',
         centerLabel: 'extends',
       };
     case 'realization':
@@ -76,7 +76,7 @@ function getRelationVisuals(relation: Relation): EdgeVisuals {
         stroke: '#e2e8f0',
         strokeWidth: 2,
         strokeDasharray: '10 6',
-        markerEnd: 'url(#uml-realization)',
+        endSymbol: 'triangle-open',
         centerLabel: 'implements',
       };
     case 'dependency':
@@ -84,7 +84,7 @@ function getRelationVisuals(relation: Relation): EdgeVisuals {
         stroke: '#94a3b8',
         strokeWidth: 1.8,
         strokeDasharray: '8 6',
-        markerEnd: 'url(#uml-dependency)',
+        endSymbol: 'arrow-open',
         centerLabel: 'uses',
       };
     case 'association':
@@ -114,9 +114,75 @@ function renderEndLabel(x: number, y: number, text: string, key: string) {
       style={{
         ...END_LABEL_STYLE,
         transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
+        zIndex: 30,
       }}
     >
       {text}
+    </div>
+  );
+}
+
+function renderTerminalSymbol(
+  symbol: EdgeVisuals['startSymbol'] | EdgeVisuals['endSymbol'],
+  x: number,
+  y: number,
+  angle: number,
+  key: string,
+) {
+  if (!symbol) {
+    return null;
+  }
+
+  const baseStyle: React.CSSProperties = {
+    position: 'absolute',
+    width: '22px',
+    height: '22px',
+    transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${angle}deg)`,
+    pointerEvents: 'none',
+    zIndex: 35,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  };
+
+  if (symbol === 'diamond-hollow' || symbol === 'diamond-filled') {
+    return (
+      <div key={key} style={baseStyle}>
+        <div
+          style={{
+            width: '12px',
+            height: '12px',
+            transform: 'rotate(45deg)',
+            backgroundColor: symbol === 'diamond-filled' ? '#f8fafc' : '#0b1220',
+            border: '2px solid #f8fafc',
+            boxSizing: 'border-box',
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (symbol === 'triangle-hollow' || symbol === 'triangle-open') {
+    return (
+      <div key={key} style={baseStyle}>
+        <svg width="20" height="20" viewBox="0 0 20 20">
+          <polygon
+            points="2,10 18,2 18,18"
+            fill="#0b1220"
+            stroke="#f8fafc"
+            strokeWidth="1.7"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    <div key={key} style={baseStyle}>
+      <svg width="18" height="18" viewBox="0 0 18 18">
+        <path d="M3 9 L15 3 M3 9 L15 15" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
     </div>
   );
 }
@@ -149,8 +215,11 @@ export const UmlRelationEdge: React.FC<EdgeProps<UmlRelationEdgeData>> = ({
   });
 
   const visuals = getRelationVisuals(relation);
-  const sourceLabelPoint = offsetTowards(sourceX, sourceY, targetX, targetY, 26);
-  const targetLabelPoint = offsetTowards(targetX, targetY, sourceX, sourceY, 26);
+  const sourceLabelPoint = offsetTowards(sourceX, sourceY, targetX, targetY, 44);
+  const targetLabelPoint = offsetTowards(targetX, targetY, sourceX, sourceY, 44);
+  const sourceSymbolPoint = offsetTowards(sourceX, sourceY, targetX, targetY, 18);
+  const targetSymbolPoint = offsetTowards(targetX, targetY, sourceX, sourceY, 18);
+  const angle = Math.atan2(targetY - sourceY, targetX - sourceX) * (180 / Math.PI);
   const showMultiplicity = !['inheritance', 'realization', 'dependency'].includes(relation.umlType || 'association');
   const centerLabel = visuals.centerLabel || relation.documentation || '';
 
@@ -164,22 +233,23 @@ export const UmlRelationEdge: React.FC<EdgeProps<UmlRelationEdgeData>> = ({
           strokeWidth: visuals.strokeWidth,
           strokeDasharray: visuals.strokeDasharray,
         }}
-        markerStart={visuals.markerStart}
-        markerEnd={visuals.markerEnd}
       />
       <EdgeLabelRenderer>
         <>
+          {renderTerminalSymbol(visuals.startSymbol, sourceSymbolPoint.x, sourceSymbolPoint.y, angle, `${id}-start-symbol`)}
+          {renderTerminalSymbol(visuals.endSymbol, targetSymbolPoint.x, targetSymbolPoint.y, angle, `${id}-end-symbol`)}
           {showMultiplicity && relation.sourceMultiplicity
-            ? renderEndLabel(sourceLabelPoint.x, sourceLabelPoint.y - 14, relation.sourceMultiplicity, `${id}-source`)
+            ? renderEndLabel(sourceLabelPoint.x, sourceLabelPoint.y - 16, relation.sourceMultiplicity, `${id}-source`)
             : null}
           {showMultiplicity && relation.targetMultiplicity
-            ? renderEndLabel(targetLabelPoint.x, targetLabelPoint.y - 14, relation.targetMultiplicity, `${id}-target`)
+            ? renderEndLabel(targetLabelPoint.x, targetLabelPoint.y - 16, relation.targetMultiplicity, `${id}-target`)
             : null}
           {centerLabel ? (
             <div
               style={{
                 ...CENTER_LABEL_STYLE,
                 transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+                zIndex: 32,
               }}
             >
               {centerLabel}
@@ -190,25 +260,3 @@ export const UmlRelationEdge: React.FC<EdgeProps<UmlRelationEdgeData>> = ({
     </>
   );
 };
-
-export const UmlMarkerDefs: React.FC = () => (
-  <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
-    <defs>
-      <marker id="uml-aggregation" viewBox="0 0 24 24" markerWidth="16" markerHeight="16" refX="12" refY="12" orient="auto-start-reverse">
-        <path d="M12 2 L22 12 L12 22 L2 12 Z" fill="#0b1220" stroke="#e2e8f0" strokeWidth="1.8" />
-      </marker>
-      <marker id="uml-composition" viewBox="0 0 24 24" markerWidth="16" markerHeight="16" refX="12" refY="12" orient="auto-start-reverse">
-        <path d="M12 2 L22 12 L12 22 L2 12 Z" fill="#f8fafc" stroke="#f8fafc" strokeWidth="1.4" />
-      </marker>
-      <marker id="uml-inheritance" viewBox="0 0 24 24" markerWidth="18" markerHeight="18" refX="21" refY="12" orient="auto">
-        <path d="M2 12 L22 2 L22 22 Z" fill="#0b1220" stroke="#f8fafc" strokeWidth="1.8" />
-      </marker>
-      <marker id="uml-realization" viewBox="0 0 24 24" markerWidth="18" markerHeight="18" refX="21" refY="12" orient="auto">
-        <path d="M2 12 L22 2 L22 22 Z" fill="#0b1220" stroke="#e2e8f0" strokeWidth="1.8" />
-      </marker>
-      <marker id="uml-dependency" viewBox="0 0 20 20" markerWidth="14" markerHeight="14" refX="18" refY="10" orient="auto">
-        <path d="M2 10 L18 2 M2 10 L18 18" fill="none" stroke="#94a3b8" strokeWidth="1.6" strokeLinecap="round" />
-      </marker>
-    </defs>
-  </svg>
-);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ClassEntity, Attribute, Method, DataType, Visibility, Relation, OnDeleteAction, UmlRelationType, deriveRelationType } from '../types/schema';
-import { createAttribute, createMethod, isDataRelation as isUmlDataRelation, resolveOnDelete } from '../domain/schema/schemaOperations';
+import { createAttribute, createMethod, isDataRelation as isUmlDataRelation, resolveOnDelete, swapRelationEndpoints } from '../domain/schema/schemaOperations';
 
 interface PropertyPanelProps {
   entity?: ClassEntity;
@@ -58,6 +58,8 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({ entity, relation, 
 
   // ─── Relation state (UML-first: ORM type is auto-derived) ───
   const [umlType, setUmlType] = useState<UmlRelationType>(relation?.umlType || 'association');
+  const [srcEntityId, setSrcEntityId] = useState(relation?.sourceClassId || '');
+  const [tgtEntityId, setTgtEntityId] = useState(relation?.targetClassId || '');
   const [srcMult, setSrcMult] = useState(relation?.sourceMultiplicity || '1');
   const [tgtMult, setTgtMult] = useState(relation?.targetMultiplicity || '*');
   const [srcField, setSrcField] = useState(relation?.sourceFieldName || '');
@@ -101,6 +103,8 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({ entity, relation, 
     pendingRelSave.current = null;
     if (relation) {
       setUmlType(relation.umlType || 'association');
+      setSrcEntityId(relation.sourceClassId);
+      setTgtEntityId(relation.targetClassId);
       setSrcMult(relation.sourceMultiplicity || '1');
       setTgtMult(relation.targetMultiplicity || '*');
       setSrcField(relation.sourceFieldName || '');
@@ -151,6 +155,8 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({ entity, relation, 
       const derivedType = deriveRelationType(umlType, srcMult, tgtMult);
       const nextRelation: Relation = {
         ...relationRef.current!,
+        sourceClassId: srcEntityId || relationRef.current!.sourceClassId,
+        targetClassId: tgtEntityId || relationRef.current!.targetClassId,
         type: derivedType || 'OneToOne',
         umlType,
         sourceMultiplicity: isDataRel ? (srcMult || undefined) : undefined,
@@ -174,7 +180,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({ entity, relation, 
         relationAutoSaveTimer.current = null;
       }
     };
-  }, [umlType, srcMult, tgtMult, srcField, tgtField, onDeleteAction, relDoc]);
+  }, [umlType, srcEntityId, tgtEntityId, srcMult, tgtMult, srcField, tgtField, onDeleteAction, relDoc]);
   const clearPendingSaves = () => {
     if (entityAutoSaveTimer.current) {
       clearTimeout(entityAutoSaveTimer.current);
@@ -240,8 +246,8 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({ entity, relation, 
 
   // ─── Relation Panel ───
   if (relation) {
-    const srcEntity = entities?.find((e) => e.id === relation.sourceClassId);
-    const tgtEntity = entities?.find((e) => e.id === relation.targetClassId);
+    const srcEntity = entities?.find((e) => e.id === srcEntityId);
+    const tgtEntity = entities?.find((e) => e.id === tgtEntityId);
 
     return (
       <div
@@ -264,6 +270,59 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({ entity, relation, 
 
         <div style={{ fontSize: '12px', color: '#94a3b8', backgroundColor: '#334155', padding: '8px', borderRadius: '4px' }}>
           <strong>{srcEntity?.name || '?'}</strong> → <strong>{tgtEntity?.name || '?'}</strong>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'end' }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>Source Class</label>
+            <select value={srcEntityId} onChange={(e) => setSrcEntityId(e.target.value)} style={inputStyle}>
+              {(entities || []).map((item) => (
+                <option key={item.id} value={item.id}>{item.name}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={() => {
+              const swapped = swapRelationEndpoints({
+                ...relation,
+                sourceClassId: srcEntityId || relation.sourceClassId,
+                targetClassId: tgtEntityId || relation.targetClassId,
+                sourceMultiplicity: srcMult || undefined,
+                targetMultiplicity: tgtMult || undefined,
+                sourceFieldName: srcField || undefined,
+                targetFieldName: tgtField || undefined,
+              });
+              setSrcEntityId(swapped.sourceClassId);
+              setTgtEntityId(swapped.targetClassId);
+              setSrcMult(swapped.sourceMultiplicity || '');
+              setTgtMult(swapped.targetMultiplicity || '');
+              setSrcField(swapped.sourceFieldName || '');
+              setTgtField(swapped.targetFieldName || '');
+            }}
+            style={{
+              backgroundColor: '#1d4ed8',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '8px 10px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 600,
+              height: '36px',
+              whiteSpace: 'nowrap',
+            }}
+            title="Swap source and target"
+          >
+            Swap Ends
+          </button>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>Target Class</label>
+            <select value={tgtEntityId} onChange={(e) => setTgtEntityId(e.target.value)} style={inputStyle}>
+              {(entities || []).map((item) => (
+                <option key={item.id} value={item.id}>{item.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* ── UML Relationship Type (primary) ── */}

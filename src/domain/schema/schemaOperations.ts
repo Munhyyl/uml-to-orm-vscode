@@ -145,3 +145,15 @@ export function upsertRelation(schema: ProjectSchema, relation: Relation): Proje
     relations: schema.relations.map((item) => (item.id === relation.id ? relation : item)),
   };
 }
+
+export function swapRelationEndpoints(relation: Relation): Relation {
+  return {
+    ...relation,
+    sourceClassId: relation.targetClassId,
+    targetClassId: relation.sourceClassId,
+    sourceMultiplicity: relation.targetMultiplicity,
+    targetMultiplicity: relation.sourceMultiplicity,
+    sourceFieldName: relation.targetFieldName,
+    targetFieldName: relation.sourceFieldName,
+  };
+}
