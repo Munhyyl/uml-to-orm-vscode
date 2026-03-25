@@ -1,5 +1,12 @@
-import { useReducer, useCallback, useRef } from 'react';
-import { ProjectSchema, ClassEntity, Relation, OrmType, TargetLanguage } from '../types/schema';
+import { useReducer, useCallback, useRef, useState } from 'react';
+import { ProjectSchema, ClassEntity, OrmType, TargetLanguage } from '../types/schema';
+import {
+  createHistory,
+  pushHistory as pushHistoryState,
+  canUndo as canUndoHistory,
+  canRedo as canRedoHistory,
+  HistoryState,
+} from '../application/state/history';
 
 // ─── State & Action Types ──────────────────────────────────────
 
@@ -81,55 +88,41 @@ export function diagramReducer(state: DiagramState, action: DiagramAction): Diag
 
 // ─── Custom Hook: useSchemaReducer ────────────────────────────
 
-export interface HistoryState {
-  stack: ProjectSchema[];
-  index: number;
-}
-
 export function useDiagramState(initialSchema: ProjectSchema) {
   const [state, dispatch] = useReducer(diagramReducer, {
     schema: initialSchema,
     selectedEntityId: null,
     selectedRelationId: null,
   });
+  const [, setHistoryVersion] = useState(0);
 
-  const historyRef = useRef<HistoryState>({
-    stack: [JSON.parse(JSON.stringify(initialSchema))],
-    index: 0,
-  });
-
-  const MAX_HISTORY = 50;
+  const historyRef = useRef<HistoryState>(createHistory(initialSchema));
 
   const pushHistory = useCallback((schema: ProjectSchema) => {
-    const { stack, index } = historyRef.current;
-    // Remove any future history if we're not at the end
-    historyRef.current.stack = stack.slice(0, index + 1);
-    historyRef.current.stack.push(JSON.parse(JSON.stringify(schema)));
-    if (historyRef.current.stack.length > MAX_HISTORY) {
-      historyRef.current.stack.shift();
-    } else {
-      historyRef.current.index = historyRef.current.stack.length - 1;
-    }
+    historyRef.current = pushHistoryState(historyRef.current, schema);
+    setHistoryVersion((version) => version + 1);
   }, []);
 
   const undo = useCallback(() => {
-    if (historyRef.current.index <= 0) return;
+    if (!canUndoHistory(historyRef.current)) return;
     historyRef.current.index -= 1;
     const schema = JSON.parse(JSON.stringify(historyRef.current.stack[historyRef.current.index]));
     dispatch({ type: 'SET_SCHEMA', payload: schema });
     dispatch({ type: 'DESELECT_ALL' });
+    setHistoryVersion((version) => version + 1);
   }, []);
 
   const redo = useCallback(() => {
-    if (historyRef.current.index >= historyRef.current.stack.length - 1) return;
+    if (!canRedoHistory(historyRef.current)) return;
     historyRef.current.index += 1;
     const schema = JSON.parse(JSON.stringify(historyRef.current.stack[historyRef.current.index]));
     dispatch({ type: 'SET_SCHEMA', payload: schema });
     dispatch({ type: 'DESELECT_ALL' });
+    setHistoryVersion((version) => version + 1);
   }, []);
 
-  const canUndo = historyRef.current.index > 0;
-  const canRedo = historyRef.current.index < historyRef.current.stack.length - 1;
+  const canUndo = canUndoHistory(historyRef.current);
+  const canRedo = canRedoHistory(historyRef.current);
 
   return {
     state,

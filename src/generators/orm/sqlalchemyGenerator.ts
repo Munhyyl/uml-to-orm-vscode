@@ -1,5 +1,6 @@
-import { ProjectSchema, ClassEntity, Attribute, Method } from '../../types/schema';
+import { ProjectSchema, ClassEntity, Method } from '../../types/schema';
 import { CodeGenerator } from '../codeGeneratorService';
+import { getPrimaryAttributeName, getPrimaryAttributeType } from '../../domain/schema/schemaOperations';
 
 export class SQLAlchemyGenerator implements CodeGenerator {
   async generate(schema: ProjectSchema): Promise<string> {
@@ -41,11 +42,13 @@ export class SQLAlchemyGenerator implements CodeGenerator {
         const tableName = `${this.camelToSnake(src.name)}_${this.camelToSnake(tgt.name)}`;
         const srcFkType = this.getFkColumnType(src);
         const tgtFkType = this.getFkColumnType(tgt);
+        const srcPkName = this.camelToSnake(this.getPkName(src));
+        const tgtPkName = this.camelToSnake(this.getPkName(tgt));
         output += `${tableName} = Table(\n`;
         output += `    '${tableName}',\n`;
         output += `    Base.metadata,\n`;
-        output += `    Column('${this.camelToSnake(src.name)}_id', ${srcFkType}, ForeignKey('${this.camelToSnake(src.name)}.id'), primary_key=True),\n`;
-        output += `    Column('${this.camelToSnake(tgt.name)}_id', ${tgtFkType}, ForeignKey('${this.camelToSnake(tgt.name)}.id'), primary_key=True),\n`;
+        output += `    Column('${this.camelToSnake(src.name)}_${srcPkName}', ${srcFkType}, ForeignKey('${this.camelToSnake(src.name)}.${srcPkName}'), primary_key=True),\n`;
+        output += `    Column('${this.camelToSnake(tgt.name)}_${tgtPkName}', ${tgtFkType}, ForeignKey('${this.camelToSnake(tgt.name)}.${tgtPkName}'), primary_key=True),\n`;
         output += `)\n\n`;
       }
     }
@@ -61,9 +64,11 @@ export class SQLAlchemyGenerator implements CodeGenerator {
 
   /** Get the SQLAlchemy column type for a FK referencing this entity's PK */
   private getFkColumnType(entity: ClassEntity): string {
-    const pk = entity.attributes.find((a) => a.isPrimary);
-    if (!pk) return 'Integer';
-    return this.mapDataType(pk.type);
+    return this.mapDataType(getPrimaryAttributeType(entity));
+  }
+
+  private getPkName(entity: ClassEntity): string {
+    return getPrimaryAttributeName(entity);
   }
 
   private generatePyEnum(entity: ClassEntity): string {
@@ -128,8 +133,9 @@ export class SQLAlchemyGenerator implements CodeGenerator {
     }
 
     // __repr__
+    const pkName = this.getPkName(entity);
     code += `\n    def __repr__(self):\n`;
-    code += `        return f'<${entity.name}(id={self.id})>'\n`;
+    code += `        return f'<${entity.name}(${pkName}={self.${pkName}})>'\n`;
 
     return code;
   }
@@ -165,15 +171,17 @@ export class SQLAlchemyGenerator implements CodeGenerator {
 
         if (rel.type === 'OneToMany') {
           // This is the ManyToOne side — add FK column + relationship
-          const fkCol = `${this.camelToSnake(source.name)}_id`;
+          const fkPkName = this.camelToSnake(this.getPkName(source));
+          const fkCol = `${this.camelToSnake(source.name)}_${fkPkName}`;
           const fkType = this.getFkColumnType(source);
           const onDel = effectiveOnDelete ? `, ondelete='${effectiveOnDelete.toUpperCase()}'` : '';
-          lines.push(`${fkCol} = Column(${fkType}, ForeignKey('${this.camelToSnake(source.name)}.id'${onDel}))`);
+          lines.push(`${fkCol} = Column(${fkType}, ForeignKey('${this.camelToSnake(source.name)}.${fkPkName}'${onDel}))`);
           lines.push(`${fieldName} = relationship('${source.name}', back_populates='${rel.sourceFieldName || this.lowerFirst(schema.entities.find((e) => e.id === entityId)!.name) + 's'}')`);
         } else if (rel.type === 'OneToOne') {
-          const fkCol = `${this.camelToSnake(source.name)}_id`;
+          const fkPkName = this.camelToSnake(this.getPkName(source));
+          const fkCol = `${this.camelToSnake(source.name)}_${fkPkName}`;
           const fkType = this.getFkColumnType(source);
-          lines.push(`${fkCol} = Column(${fkType}, ForeignKey('${this.camelToSnake(source.name)}.id'), unique=True)`);
+          lines.push(`${fkCol} = Column(${fkType}, ForeignKey('${this.camelToSnake(source.name)}.${fkPkName}'), unique=True)`);
           lines.push(`${fieldName} = relationship('${source.name}', back_populates='${rel.sourceFieldName || this.lowerFirst(schema.entities.find((e) => e.id === entityId)!.name)}')`);
         } else if (rel.type === 'ManyToMany') {
           const tableName = `${this.camelToSnake(source.name)}_${this.camelToSnake(schema.entities.find((e) => e.id === entityId)!.name)}`;

@@ -15,8 +15,7 @@ import {
 import {
   UMLModel, UMLClass, UMLProperty, UMLOperation, UMLParameter,
   UMLAssociation, UMLGeneralization, UMLDependency, UMLDiagram,
-  DiagramElement, MultiplicityElement, Multiplicity,
-  VisibilityKind, AggregationKind,
+  DiagramElement, Multiplicity, AggregationKind,
   toUMLPrimitiveType, fromUMLPrimitiveType,
   parseMultiplicityString, multiplicityToString,
 } from './umlMetamodel';

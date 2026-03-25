@@ -61,11 +61,11 @@ export class DjangoGenerator implements CodeGenerator {
       code += `    """${entity.documentation}"""\n\n`;
     }
 
-    // Regular attributes (skip PK — Django creates auto PK)
+    // Attributes
     for (const attr of entity.attributes) {
-      if (!attr.isPrimary) {
-        const field = this.mapDjangoField(attr);
-        code += `    ${attr.name} = ${field}\n`;
+      const isDefaultAutoPk = attr.isPrimary && attr.name === 'id' && attr.type === 'Int';
+      if (!isDefaultAutoPk) {
+        code += `    ${attr.name} = ${this.mapDjangoField(attr)}\n`;
       }
     }
 
@@ -168,6 +168,10 @@ export class DjangoGenerator implements CodeGenerator {
 
     if (attr.isUnique) {
       kwargs.push('unique=True');
+    }
+
+    if (attr.isPrimary) {
+      kwargs.push('primary_key=True');
     }
 
     if (attr.defaultValue) {

@@ -123,44 +123,8 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
   // ─── ReactFlow ref ────────────────────────────────────────────
   const reactFlowRef = useRef<any>(null);
 
-  const handleCopy = useCallback(() => {
-    const ent = appState.schema.entities.find((e) => e.id === appState.selectedEntityId);
-    if (ent) clipboardCopy(ent);
-  }, [appState.selectedEntityId, appState.schema.entities, clipboardCopy]);
-
-  const initialNodes: Node[] = initialSchema.entities.map((entity) => ({
-    id: entity.id,
-    data: {
-      label: entity.name,
-      stereotype: entity.stereotype || 'entity',
-      attributes: entity.attributes,
-      methods: entity.methods || [],
-      onSelect: () => dispatch({ type: 'SELECT_ENTITY', payload: entity.id }),
-    },
-    position: entity.position,
-    type: 'entity',
-  }));
-
-  const initialEdges: Edge[] = initialSchema.relations.map((relation) => ({
-    id: relation.id,
-    source: relation.sourceClassId,
-    target: relation.targetClassId,
-    label: buildEdgeLabel(relation),
-    type: 'smoothstep',
-    animated: false,
-    style: getEdgeStyle(relation),
-    labelStyle: { fill: '#94a3b8', fontSize: 11, fontFamily: 'monospace' },
-    labelBgStyle: { fill: '#0f172a', fillOpacity: 0.8 },
-    markerEnd: getEdgeMarker(relation),
-  }));
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [showWelcome, setShowWelcome] = useState(initialNodes.length === 0);
-
-  // ─── Rebuild helper (depends on setNodes/setEdges) ──────────────
-  const rebuildNodesEdges = useCallback((schema: ProjectSchema) => {
-    const newNodes = schema.entities.map((entity: ClassEntity) => ({
+  const mapSchemaToNodes = useCallback((schema: ProjectSchema): Node[] => (
+    schema.entities.map((entity) => ({
       id: entity.id,
       data: {
         label: entity.name,
@@ -171,8 +135,11 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
       },
       position: entity.position,
       type: 'entity',
-    }));
-    const newEdges = schema.relations.map((relation: Relation) => ({
+    }))
+  ), [dispatch]);
+
+  const mapSchemaToEdges = useCallback((schema: ProjectSchema): Edge[] => (
+    schema.relations.map((relation) => ({
       id: relation.id,
       source: relation.sourceClassId,
       target: relation.targetClassId,
@@ -183,12 +150,36 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
       labelStyle: { fill: '#94a3b8', fontSize: 11, fontFamily: 'monospace' },
       labelBgStyle: { fill: '#0f172a', fillOpacity: 0.8 },
       markerEnd: getEdgeMarker(relation),
-    }));
+    }))
+  ), []);
+
+  const handleCopy = useCallback(() => {
+    const ent = appState.schema.entities.find((e) => e.id === appState.selectedEntityId);
+    if (ent) clipboardCopy(ent);
+  }, [appState.selectedEntityId, appState.schema.entities, clipboardCopy]);
+
+  const initialNodes = mapSchemaToNodes(initialSchema);
+  const initialEdges = mapSchemaToEdges(initialSchema);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [showWelcome, setShowWelcome] = useState(initialNodes.length === 0);
+
+  // ─── Rebuild helper (depends on setNodes/setEdges) ──────────────
+  const rebuildNodesEdges = useCallback((schema: ProjectSchema) => {
+    const newNodes = mapSchemaToNodes(schema);
+    const newEdges = mapSchemaToEdges(schema);
     setNodes(newNodes);
     setEdges(newEdges);
     setShowWelcome(newNodes.length === 0);
     postMessage('updateSchema', { schema });
-  }, [setNodes, setEdges, postMessage, dispatch]);
+  }, [mapSchemaToNodes, mapSchemaToEdges, setNodes, setEdges, postMessage]);
+
+  useEffect(() => {
+    setNodes(mapSchemaToNodes(appState.schema));
+    setEdges(mapSchemaToEdges(appState.schema));
+    setShowWelcome(appState.schema.entities.length === 0);
+  }, [appState.schema, mapSchemaToNodes, mapSchemaToEdges, setNodes, setEdges]);
 
   const handlePaste = useCallback(() => {
     if (!hasCopied) return;
@@ -282,30 +273,8 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
         dispatch({ type: 'DESELECT_ALL' });
         
         // Update nodes and edges
-        const newNodes = schema.entities.map((entity: ClassEntity) => ({
-          id: entity.id,
-          data: {
-            label: entity.name,
-            stereotype: entity.stereotype || 'entity',
-            attributes: entity.attributes,
-            methods: entity.methods || [],
-            onSelect: () => dispatch({ type: 'SELECT_ENTITY', payload: entity.id }),
-          },
-          position: entity.position,
-          type: 'entity',
-        }));
-        const newEdges = schema.relations.map((relation: Relation) => ({
-          id: relation.id,
-          source: relation.sourceClassId,
-          target: relation.targetClassId,
-          label: buildEdgeLabel(relation),
-          type: 'smoothstep',
-          animated: false,
-          style: getEdgeStyle(relation),
-          labelStyle: { fill: '#94a3b8', fontSize: 11, fontFamily: 'monospace' },
-          labelBgStyle: { fill: '#0f172a', fillOpacity: 0.8 },
-          markerEnd: getEdgeMarker(relation),
-        }));
+        const newNodes = mapSchemaToNodes(schema);
+        const newEdges = mapSchemaToEdges(schema);
         
         setNodes(newNodes);
         setEdges(newEdges);
@@ -324,7 +293,7 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
       window.removeEventListener('message', handleMessage);
       cleanupConfirmation();
     };
-  }, [setNodes, setEdges, dispatch, getVscodeApi, cleanupConfirmation, handleConfirmationResult]);
+  }, [setNodes, setEdges, dispatch, getVscodeApi, cleanupConfirmation, handleConfirmationResult, mapSchemaToNodes, mapSchemaToEdges]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -369,8 +338,9 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
       ),
     };
     dispatch({ type: 'SET_SCHEMA', payload: updatedSchema });
+    pushHistory(updatedSchema);
     postMessage('updateSchema', { schema: updatedSchema });
-  }, [appState.schema, dispatch, postMessage]);
+  }, [appState.schema, dispatch, pushHistory, postMessage]);
 
   const handleSelectionChange = useCallback((params: OnSelectionChangeParams) => {
     if (params.nodes.length > 0) {
@@ -558,12 +528,30 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
   }, [appState.schema, showToast, postMessage, getVscodeApi]);
 
   const handleChangeOrm = useCallback((orm: OrmType) => {
-    dispatch({ type: 'UPDATE_SCHEMA_CONFIG', payload: { orm } });
-  }, [dispatch]);
+    const updatedSchema = {
+      ...appState.schema,
+      config: {
+        ...appState.schema.config,
+        orm,
+      },
+    };
+    dispatch({ type: 'SET_SCHEMA', payload: updatedSchema });
+    pushHistory(updatedSchema);
+    postMessage('updateSchema', { schema: updatedSchema });
+  }, [appState.schema, dispatch, pushHistory, postMessage]);
 
   const handleChangeLanguage = useCallback((lang: TargetLanguage) => {
-    dispatch({ type: 'UPDATE_SCHEMA_CONFIG', payload: { targetLanguage: lang } });
-  }, [dispatch]);
+    const updatedSchema = {
+      ...appState.schema,
+      config: {
+        ...appState.schema.config,
+        targetLanguage: lang,
+      },
+    };
+    dispatch({ type: 'SET_SCHEMA', payload: updatedSchema });
+    pushHistory(updatedSchema);
+    postMessage('updateSchema', { schema: updatedSchema });
+  }, [appState.schema, dispatch, pushHistory, postMessage]);
 
   const handleExportXMI = useCallback(() => {
     if (!getVscodeApi()?.postMessage) {
@@ -689,25 +677,8 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
 
                 const updatedSchema = upsertEntity(appState.schema, updatedEntity);
                 dispatch({ type: 'SET_SCHEMA', payload: updatedSchema });
+                pushHistory(updatedSchema);
                 postMessage('updateSchema', { schema: updatedSchema });
-
-                setNodes((nds) =>
-                  nds.map((node) =>
-                    node.id === updatedEntity.id
-                      ? {
-                          ...node,
-                          data: {
-                            label: updatedEntity.name,
-                            stereotype: updatedEntity.stereotype || 'entity',
-                            attributes: updatedEntity.attributes,
-                            methods: updatedEntity.methods || [],
-                            onSelect: () =>
-                              dispatch({ type: 'SELECT_ENTITY', payload: updatedEntity.id }),
-                          },
-                        }
-                      : node
-                  )
-                );
               }}
               onUpdateRelation={(updatedRelation) => {
                 const exists = appState.schema.relations.some((r) => r.id === updatedRelation.id);
@@ -715,21 +686,8 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
 
                 const updatedSchema = upsertRelation(appState.schema, updatedRelation);
                 dispatch({ type: 'SET_SCHEMA', payload: updatedSchema });
+                pushHistory(updatedSchema);
                 postMessage('updateSchema', { schema: updatedSchema });
-
-                // Update edge visuals (label + style + marker)
-                setEdges((eds) =>
-                  eds.map((edge) =>
-                    edge.id === updatedRelation.id
-                      ? {
-                          ...edge,
-                          label: buildEdgeLabel(updatedRelation),
-                          style: getEdgeStyle(updatedRelation),
-                          markerEnd: getEdgeMarker(updatedRelation),
-                        }
-                      : edge
-                  )
-                );
               }}
               onDeleteRelation={(relationId) => {
                 requestConfirmation('Энэ relation-г устгахдаа итгэлтэй байна уу?', undefined, 'Delete').then((confirmed) => {

@@ -1,5 +1,6 @@
 import { ProjectSchema, ClassEntity, Attribute, Method } from '../../types/schema';
 import { CodeGenerator } from '../codeGeneratorService';
+import { getPrimaryAttributeName } from '../../domain/schema/schemaOperations';
 
 export class TypeORMGenerator implements CodeGenerator {
   async generate(schema: ProjectSchema): Promise<string> {
@@ -79,7 +80,10 @@ export class TypeORMGenerator implements CodeGenerator {
     const parentClass = this.getParentClass(entity.id, schema);
     const interfaces = this.getInterfaces(entity.id, schema);
 
-    let code = `import { ${Array.from(imports).join(', ')} } from 'typeorm';\n`;
+    let code = '';
+    if (imports.size > 0) {
+      code += `import { ${Array.from(imports).join(', ')} } from 'typeorm';\n`;
+    }
     if (parentClass) {
       code += `import { ${parentClass.name} } from './${parentClass.name}';\n`;
     }
@@ -177,6 +181,8 @@ export class TypeORMGenerator implements CodeGenerator {
     isArray: boolean;
     needsJoinColumn: boolean;
     needsJoinTable: boolean;
+    joinColumnName?: string;
+    referencedColumnName?: string;
     inverseSide?: string;
     mappedBy?: string;
     onDelete?: string;
@@ -189,12 +195,20 @@ export class TypeORMGenerator implements CodeGenerator {
       code += `  ${rel.fieldName}!: ${rel.targetName}[];\n\n`;
     } else if (rel.decorator === 'ManyToOne') {
       code += `  @ManyToOne(() => ${rel.targetName}${onDelOpt})\n`;
-      if (rel.needsJoinColumn) code += `  @JoinColumn()\n`;
+      if (rel.needsJoinColumn) {
+        const joinOpts = rel.joinColumnName
+          ? `{ name: '${rel.joinColumnName}'${rel.referencedColumnName ? `, referencedColumnName: '${rel.referencedColumnName}'` : ''} }`
+          : '';
+        code += `  @JoinColumn(${joinOpts})\n`;
+      }
       code += `  ${rel.fieldName}!: ${rel.targetName};\n\n`;
     } else if (rel.decorator === 'OneToOne') {
       if (rel.needsJoinColumn) {
         code += `  @OneToOne(() => ${rel.targetName}${onDelOpt})\n`;
-        code += `  @JoinColumn()\n`;
+        const joinOpts = rel.joinColumnName
+          ? `{ name: '${rel.joinColumnName}'${rel.referencedColumnName ? `, referencedColumnName: '${rel.referencedColumnName}'` : ''} }`
+          : '';
+        code += `  @JoinColumn(${joinOpts})\n`;
       } else {
         code += `  @OneToOne(() => ${rel.targetName}, (${this.lowerFirst(rel.targetName)}) => ${this.lowerFirst(rel.targetName)}.${rel.inverseSide || this.lowerFirst(rel.targetName)})\n`;
       }
@@ -232,6 +246,8 @@ export class TypeORMGenerator implements CodeGenerator {
     isArray: boolean;
     needsJoinColumn: boolean;
     needsJoinTable: boolean;
+    joinColumnName?: string;
+    referencedColumnName?: string;
     inverseSide?: string;
     mappedBy?: string;
     onDelete?: string;
@@ -250,6 +266,7 @@ export class TypeORMGenerator implements CodeGenerator {
         if (!target) continue;
 
         if (rel.type === 'OneToMany') {
+          const sourcePkName = getPrimaryAttributeName(schema.entities.find((e) => e.id === entityId)!);
           results.push({
             decorator: 'OneToMany',
             targetName: target.name,
@@ -258,8 +275,13 @@ export class TypeORMGenerator implements CodeGenerator {
             needsJoinColumn: false,
             needsJoinTable: false,
             inverseSide: rel.targetFieldName || this.lowerFirst(schema.entities.find((e) => e.id === entityId)!.name),
+            referencedColumnName: sourcePkName,
           });
         } else if (rel.type === 'OneToOne') {
+          const targetPkName = getPrimaryAttributeName(target);
+          const joinColumnName = targetPkName === 'id'
+            ? `${rel.sourceFieldName || this.lowerFirst(target.name)}Id`
+            : `${rel.sourceFieldName || this.lowerFirst(target.name)}${this.upperFirst(targetPkName)}`;
           results.push({
             decorator: 'OneToOne',
             targetName: target.name,
@@ -267,6 +289,8 @@ export class TypeORMGenerator implements CodeGenerator {
             isArray: false,
             needsJoinColumn: true,
             needsJoinTable: false,
+            joinColumnName,
+            referencedColumnName: targetPkName,
             onDelete: effectiveOnDelete,
           });
         } else if (rel.type === 'ManyToMany') {
@@ -284,6 +308,10 @@ export class TypeORMGenerator implements CodeGenerator {
         if (!source) continue;
 
         if (rel.type === 'OneToMany') {
+          const sourcePkName = getPrimaryAttributeName(source);
+          const joinColumnName = sourcePkName === 'id'
+            ? `${rel.targetFieldName || this.lowerFirst(source.name)}Id`
+            : `${rel.targetFieldName || this.lowerFirst(source.name)}${this.upperFirst(sourcePkName)}`;
           results.push({
             decorator: 'ManyToOne',
             targetName: source.name,
@@ -291,6 +319,8 @@ export class TypeORMGenerator implements CodeGenerator {
             isArray: false,
             needsJoinColumn: true,
             needsJoinTable: false,
+            joinColumnName,
+            referencedColumnName: sourcePkName,
             onDelete: effectiveOnDelete,
           });
         } else if (rel.type === 'OneToOne') {
@@ -336,5 +366,9 @@ export class TypeORMGenerator implements CodeGenerator {
 
   private lowerFirst(str: string): string {
     return str.charAt(0).toLowerCase() + str.slice(1);
+  }
+
+  private upperFirst(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 }

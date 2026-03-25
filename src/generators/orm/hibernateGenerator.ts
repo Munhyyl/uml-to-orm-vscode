@@ -1,5 +1,6 @@
 import { ProjectSchema, ClassEntity, Attribute, Method } from '../../types/schema';
 import { CodeGenerator } from '../codeGeneratorService';
+import { getPrimaryAttributeName } from '../../domain/schema/schemaOperations';
 
 export class HibernateGenerator implements CodeGenerator {
   async generate(schema: ProjectSchema): Promise<string> {
@@ -259,6 +260,7 @@ export class HibernateGenerator implements CodeGenerator {
     relationType: string;
     mappedBy?: string;
     isOwner: boolean;
+    referencedColumnName?: string;
     onDelete?: string;
   }): string {
     let code = '';
@@ -272,7 +274,7 @@ export class HibernateGenerator implements CodeGenerator {
       case 'OneToOne':
         if (rel.isOwner) {
           code += `    @OneToOne(fetch = ${fetchType}, cascade = ${cascadeType})\n`;
-          code += `    @JoinColumn(name = "${this.camelToSnake(rel.fieldName)}_id", referencedColumnName = "id")\n`;
+          code += `    @JoinColumn(name = "${this.camelToSnake(rel.fieldName)}_${this.camelToSnake(rel.referencedColumnName || 'id')}", referencedColumnName = "${rel.referencedColumnName || 'id'}")\n`;
         } else {
           code += `    @OneToOne(mappedBy = "${rel.mappedBy}", fetch = ${fetchType})\n`;
         }
@@ -288,9 +290,15 @@ export class HibernateGenerator implements CodeGenerator {
         } else {
           // ManyToOne side
           code += `    @ManyToOne(fetch = ${fetchType})\n`;
-          code += `    @JoinColumn(name = "${this.camelToSnake(rel.fieldName)}_id", nullable = false)\n`;
+          code += `    @JoinColumn(name = "${this.camelToSnake(rel.fieldName)}_${this.camelToSnake(rel.referencedColumnName || 'id')}", referencedColumnName = "${rel.referencedColumnName || 'id'}", nullable = false)\n`;
           code += `    private ${rel.targetEntity} ${rel.fieldName};\n\n`;
         }
+        break;
+
+      case 'ManyToOne':
+        code += `    @ManyToOne(fetch = ${fetchType})\n`;
+        code += `    @JoinColumn(name = "${this.camelToSnake(rel.fieldName)}_${this.camelToSnake(rel.referencedColumnName || 'id')}", referencedColumnName = "${rel.referencedColumnName || 'id'}", nullable = false)\n`;
+        code += `    private ${rel.targetEntity} ${rel.fieldName};\n\n`;
         break;
 
       case 'ManyToMany':
@@ -335,6 +343,7 @@ export class HibernateGenerator implements CodeGenerator {
     relationType: string;
     mappedBy?: string;
     isOwner: boolean;
+    referencedColumnName?: string;
     onDelete?: string;
   }> {
     const results: Array<{
@@ -343,6 +352,7 @@ export class HibernateGenerator implements CodeGenerator {
       relationType: string;
       mappedBy?: string;
       isOwner: boolean;
+      referencedColumnName?: string;
       onDelete?: string;
     }> = [];
 
@@ -362,19 +372,21 @@ export class HibernateGenerator implements CodeGenerator {
           targetEntity: targetEntity.name,
           relationType: rel.type,
           isOwner: true,
+          referencedColumnName: getPrimaryAttributeName(targetEntity),
           onDelete: effectiveOnDelete,
         });
       } else if (rel.targetClassId === entityId) {
         const sourceEntity = schema.entities.find((e) => e.id === rel.sourceClassId);
         if (!sourceEntity) continue;
 
-        const reverseType = rel.type === 'OneToMany' ? 'OneToMany' : rel.type;
+        const reverseType = rel.type === 'OneToMany' ? 'ManyToOne' : rel.type;
         results.push({
           fieldName: rel.targetFieldName || this.lowerFirst(sourceEntity.name) + (rel.type === 'OneToMany' ? '' : 's'),
           targetEntity: sourceEntity.name,
           relationType: reverseType,
           mappedBy: rel.sourceFieldName || this.lowerFirst(sourceEntity.name) + (rel.type !== 'OneToOne' ? 's' : ''),
           isOwner: rel.type === 'OneToMany', // reverse side: ManyToOne is the owner
+          referencedColumnName: getPrimaryAttributeName(sourceEntity),
           onDelete: effectiveOnDelete,
         });
       }

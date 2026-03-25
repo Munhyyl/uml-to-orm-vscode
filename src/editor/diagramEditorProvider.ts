@@ -29,7 +29,7 @@ export class DiagramEditorProvider implements vscode.CustomEditorProvider<Diagra
 
   async openCustomDocument(
     uri: vscode.Uri,
-    openContext: vscode.CustomDocumentOpenContext,
+    _openContext: vscode.CustomDocumentOpenContext,
     _token: vscode.CancellationToken
   ): Promise<DiagramDocument> {
     const fileData = await vscode.workspace.fs.readFile(uri);

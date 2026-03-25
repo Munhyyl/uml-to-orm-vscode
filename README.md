@@ -1,144 +1,102 @@
-# UML to ORM Refactor - VS Code Extension
+# UML to ORM Refactor
 
-A publish-ready clean architecture refactor of the UML ↔ ORM VS Code extension.
+VS Code extension for designing UML class diagrams visually and generating ORM code from a shared intermediate representation.
 
-## Features
+## What It Does
 
-✨ **Visual UML Editor** - Drag-and-drop interface to design database schemas  
-🔄 **Bi-directional** - Forward engineering (UML → Code) and Reverse engineering (Code → UML)  
-🛠️ **Multi-ORM Support** - Prisma, TypeORM, SQLAlchemy, Django, Hibernate  
-🌍 **Multi-language** - TypeScript, Python, Java  
-💾 **Schema Persistence** - Save and load `.orm.json` files
+- Visual UML class diagram editor for `.orm.json` files
+- Forward engineering to `Prisma`, `TypeORM`, `SQLAlchemy`, `Django`, and `Hibernate`
+- Reverse engineering from `.prisma`, `.ts/.js`, `.py`, and `.java` schema/model files
+- UML-aware relationship editing:
+  `association`, `aggregation`, `composition`, `inheritance`, `realization`, `dependency`
+- XMI 2.5.1 export/import through a UML metamodel bridge
+- VS Code custom editor, activity bar project view, save/export/import workflows
 
-## Installation
+## Architecture
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Build the extension:
-   ```bash
-   npm run compile
-   npm run build:webview
-   ```
-4. Open the folder in VS Code and press `F5` to launch the extension host
+The project is organized around a single JSON-based IR: `ProjectSchema`.
 
-## Clean Architecture Structure
-
-```
-├── src/
-│   ├── extension.ts              # Extension entry point
-│   ├── application/
-│   │   └── state/                # App state & history utilities
-│   ├── domain/
-│   │   └── schema/               # Pure schema operations
-│   ├── shared/
-│   │   └── contracts/            # Typed message contracts
-│   ├── types/
-│   │   └── schema.ts             # Core IR types
-│   ├── editor/
-│   │   └── diagramEditorProvider.ts  # Custom editor provider
-│   ├── generators/
-│   │   ├── codeGeneratorService.ts
-│   │   └── orm/
-│   │       ├── prismaGenerator.ts
-│   │       ├── typeORMGenerator.ts
-│   │       ├── sqlalchemyGenerator.ts
-│   │       └── hibernateGenerator.ts
-│   ├── parsers/
-│   │   └── schemaParserService.ts    # Reverse engineering
-│   └── webview/
-│       ├── DiagramEditor.tsx     # Main React component
-│       ├── EntityNode.tsx        # React Flow node
-│       ├── Toolbar.tsx
-│       ├── PropertyPanel.tsx
-│       └── index.tsx             # Webview entry point
-├── package.json
-├── tsconfig.json
-└── README.md
+```text
+src/
+├── extension.ts                  # VS Code activation, commands, tree view
+├── editor/                       # Custom editor provider + document lifecycle
+├── webview/                      # React + React Flow diagram editor
+├── domain/schema/                # Pure schema operations and helpers
+├── generators/                   # ORM code generators
+├── parsers/                      # Reverse engineering services
+├── types/                        # IR, UML metamodel, converter types
+├── xmi/                          # XMI import/export
+├── shared/contracts/             # Typed webview messaging contracts
+├── application/state/            # Shared history utilities
+└── test/                         # Unit and regression tests
 ```
 
-## Packaging (Local / Marketplace)
+Main flow:
+
+`Diagram UI -> ProjectSchema -> Generator / Parser / UML Converter -> Code or XMI`
+
+## Supported Targets
+
+| Language | ORM | Forward | Reverse |
+| --- | --- | --- | --- |
+| TypeScript | Prisma | Yes | Yes |
+| TypeScript | TypeORM | Yes | Yes |
+| Python | SQLAlchemy | Yes | Yes |
+| Python | Django | Yes | Yes |
+| Java | Hibernate | Yes | Yes |
+
+Reverse parsing is rule-based and best-effort. Common entity/field/relation patterns are supported, but uncommon syntax and framework-specific edge cases may still need manual cleanup after import.
+
+## Development
+
+Install and build:
+
+```bash
+npm install
+npm run compile
+npm run build:webview
+```
+
+Run in VS Code:
+
+1. Open the repo in VS Code
+2. Press `F5`
+3. In the Extension Development Host, create or open a `.orm.json` file
+
+Useful commands:
 
 ```bash
 npm run compile
+npm run lint
 npm run build:webview
-npm run package
+npm run preflight
 ```
 
-Node.js 20+ is recommended for `@vscode/vsce` packaging.
+Local verification used in this repo:
 
-## Usage
-
-### Creating a New Diagram
-
-1. Run `UML to ORM: Open Editor` command
-2. Enter a name for your diagram (saved as `.orm.json`)
-3. Start designing with the visual editor
-
-### Adding Entities
-
-1. Click **+ Add Entity** button
-2. Click on an entity in the canvas to select it
-3. In the right panel, edit properties and add attributes
-4. Set primary key, required fields, and unique constraints
-
-### Generating Code
-
-1. With a diagram open, run `UML to ORM: Generate Code`
-2. Select your target ORM and language
-3. View generated code in the output panel
-
-### Importing Existing Schema
-
-1. Run `UML to ORM: Import Schema from Code`
-2. Select a Prisma `.prisma`, TypeORM `.ts`, SQLAlchemy `.py`, or Hibernate `.java` file
-3. The diagram will be generated automatically
-
-## Intermediate Representation (IR)
-
-All diagrams use a JSON-based IR for universal compatibility:
-
-```typescript
-interface ProjectSchema {
-  version: '1.0';
-  entities: ClassEntity[];
-  relations: Relation[];
-  config: ProjectConfig;
-}
+```bash
+npx mocha --ui tdd \
+  dist/test/history.test.js \
+  dist/test/prismaGenerator.test.js \
+  dist/test/generatorRegression.test.js \
+  dist/test/schemaValidator.test.js \
+  dist/test/xmiRoundTrip.test.js
 ```
 
-This allows:
+## Current Notes
 
-- ✅ Consistent data flow between UI and generators
-- ✅ Easy serialization/deserialization
-- ✅ Support for multiple ORMs without duplicating logic
-- ✅ Future extensibility
+- Undo/redo is backed by a shared history utility and wired into the webview editor flow.
+- XMI round-trip behavior is covered by regression tests.
+- Generators now use actual primary key names when emitting foreign key references.
+- Django generation preserves non-default primary keys.
+- TypeORM interface generation avoids invalid empty imports.
 
-## Supported ORMs & Languages
+## Known Limitations
 
-| Language   | ORM        | Status |
-| ---------- | ---------- | ------ |
-| TypeScript | Prisma     | ✅     |
-| TypeScript | TypeORM    | ✅     |
-| Python     | SQLAlchemy | ✅     |
-| Python     | Django     | 🚧     |
-| Java       | Hibernate  | ✅     |
-
-## Roadmap
-
-- [ ] Complete Django ORM support
-- [ ] Advanced relationship visualization
-- [ ] Export to database migration scripts
-- [ ] Validation and constraint rules
-- [ ] Collaboration features (multi-user editing)
-- [ ] Database diagram import (reverse-engineer from live DB)
+- Reverse parsers use regex/rule-based extraction, not full AST parsing.
+- Automated VS Code integration tests still depend on `vscode-test` runtime availability.
+- The editor currently focuses on UML class diagrams only.
 
 ## License
 
 MIT
-
-## Contributing
-
-Contributions welcome! Please submit issues and PRs to improve the extension.

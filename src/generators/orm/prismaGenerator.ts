@@ -1,5 +1,6 @@
-import { ProjectSchema, Relation, ClassEntity, Attribute } from '../../types/schema';
+import { ProjectSchema, ClassEntity, Attribute } from '../../types/schema';
 import { CodeGenerator } from '../codeGeneratorService';
+import { getPrimaryAttributeName, getPrimaryAttributeType } from '../../domain/schema/schemaOperations';
 
 export class PrismaGenerator implements CodeGenerator {
   async generate(schema: ProjectSchema): Promise<string> {
@@ -38,8 +39,11 @@ export class PrismaGenerator implements CodeGenerator {
 
   /** Find the PK type of a given entity (defaults to 'String') */
   private getPkType(entity: ClassEntity): string {
-    const pk = entity.attributes.find((a) => a.isPrimary);
-    return pk ? this.mapDataType(pk.type) : 'String';
+    return this.mapDataType(getPrimaryAttributeType(entity));
+  }
+
+  private getPkName(entity: ClassEntity): string {
+    return getPrimaryAttributeName(entity);
   }
 
   private generateEnum(entity: ClassEntity): string {
@@ -137,17 +141,19 @@ export class PrismaGenerator implements CodeGenerator {
         const fieldName = rel.targetFieldName || this.lowerFirst(source.name);
         // Derive FK type from the source entity's PK type
         const fkType = this.getPkType(source);
+        const pkName = this.getPkName(source);
+        const fkName = pkName === 'id'
+          ? `${fieldName}Id`
+          : `${fieldName}${this.upperFirst(pkName)}`;
 
         if (rel.type === 'OneToMany') {
           // Target side is ManyToOne: single reference + FK
-          const fkName = `${fieldName}Id`;
           const onDel = effectiveOnDelete ? `, onDelete: ${effectiveOnDelete}` : '';
-          lines.push(`  ${fieldName}    ${source.name}   @relation("${relationName}", fields: [${fkName}], references: [id]${onDel})`);
+          lines.push(`  ${fieldName}    ${source.name}   @relation("${relationName}", fields: [${fkName}], references: [${pkName}]${onDel})`);
           lines.push(`  ${fkName}  ${fkType}`);
         } else if (rel.type === 'OneToOne') {
-          const fkName = `${fieldName}Id`;
           const onDel = effectiveOnDelete ? `, onDelete: ${effectiveOnDelete}` : '';
-          lines.push(`  ${fieldName}    ${source.name}   @relation("${relationName}", fields: [${fkName}], references: [id]${onDel})`);
+          lines.push(`  ${fieldName}    ${source.name}   @relation("${relationName}", fields: [${fkName}], references: [${pkName}]${onDel})`);
           lines.push(`  ${fkName}  ${fkType}  @unique`);
         } else if (rel.type === 'ManyToMany') {
           lines.push(`  ${fieldName}  ${source.name}[]  @relation("${relationName}")`);
@@ -174,5 +180,9 @@ export class PrismaGenerator implements CodeGenerator {
 
   private lowerFirst(str: string): string {
     return str.charAt(0).toLowerCase() + str.slice(1);
+  }
+
+  private upperFirst(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 }

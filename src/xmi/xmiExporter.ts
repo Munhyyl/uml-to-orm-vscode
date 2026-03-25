@@ -140,6 +140,7 @@ function serializeProperty(prop: UMLProperty, lines: string[], depth: number): v
   if (prop.isReadOnly) attrs.push('isReadOnly="true"');
   if (prop.isDerived) attrs.push('isDerived="true"');
   if (prop.isId) attrs.push('isID="true"');
+  if (prop.isUnique) attrs.push('isUnique="true"');
   if (prop.aggregation !== 'none') attrs.push(`aggregation="${prop.aggregation}"`);
 
   lines.push(`${pad}<ownedAttribute ${attrs.join(' ')}>`);

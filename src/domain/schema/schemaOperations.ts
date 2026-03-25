@@ -24,6 +24,18 @@ export function createEmptySchema(projectName?: string): ProjectSchema {
   };
 }
 
+export function getPrimaryAttribute(entity: ClassEntity): Attribute | undefined {
+  return entity.attributes.find((attribute) => attribute.isPrimary);
+}
+
+export function getPrimaryAttributeName(entity: ClassEntity): string {
+  return getPrimaryAttribute(entity)?.name || 'id';
+}
+
+export function getPrimaryAttributeType(entity: ClassEntity): DataType {
+  return getPrimaryAttribute(entity)?.type || 'String';
+}
+
 export function isDataRelation(umlType: UmlRelationType): boolean {
   return !['inheritance', 'realization', 'dependency'].includes(umlType);
 }
