@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "entities": [
+    {
+      "id": "entity_1774454727522",
+      "name": "NewClass1",
+      "stereotype": "entity",
+      "attributes": [],
+      "methods": [],
+      "position": {
+        "x": 838.062220422704,
+        "y": 3219.1407738494245
+      }
+    }
+  ],
+  "relations": [],
+  "config": {
+    "targetLanguage": "TypeScript",
+    "orm": "Prisma"
+  }
+}
