@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI
+  xmi:version="2.5.1"
+  xmlns:xmi="http://www.omg.org/spec/XMI/20131001"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:uml="http://www.omg.org/spec/UML/20161101">
+
+  <uml:Model xmi:id="model_1774515288200" name="SimpleFiveClasses">
+    <packagedElement xmi:type="uml:Class" xmi:id="c_user" name="User" visibility="public">
+      <!-- stereotype: entity -->
+      <ownedAttribute xmi:type="uml:Property" xmi:id="a_user_id" name="id" visibility="private" isID="true" isUnique="true">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+        <!-- constraint: primaryKey -->
+        <!-- constraint: unique -->
+        <!-- constraint: notNull -->
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="a_user_email" name="email" visibility="private" isUnique="true">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+        <!-- constraint: unique -->
+        <!-- constraint: notNull -->
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="a_user_name" name="name" visibility="private">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+        <!-- constraint: notNull -->
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="c_post" name="Post" visibility="public">
+      <!-- stereotype: entity -->
+      <ownedAttribute xmi:type="uml:Property" xmi:id="a_post_id" name="id" visibility="private" isID="true" isUnique="true">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+        <!-- constraint: primaryKey -->
+        <!-- constraint: unique -->
+        <!-- constraint: notNull -->
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="a_post_title" name="title" visibility="private">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+        <!-- constraint: notNull -->
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="a_post_content" name="content" visibility="private">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+        <lowerValue xmi:type="uml:LiteralInteger" value="0"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" value="1"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="c_comment" name="Comment" visibility="public">
+      <!-- stereotype: entity -->
+      <ownedAttribute xmi:type="uml:Property" xmi:id="a_comment_id" name="id" visibility="private" isID="true" isUnique="true">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+        <!-- constraint: primaryKey -->
+        <!-- constraint: unique -->
+        <!-- constraint: notNull -->
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="a_comment_text" name="text" visibility="private">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+        <!-- constraint: notNull -->
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="c_category" name="Category" visibility="public">
+      <!-- stereotype: entity -->
+      <ownedAttribute xmi:type="uml:Property" xmi:id="a_category_id" name="id" visibility="private" isID="true" isUnique="true">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+        <!-- constraint: primaryKey -->
+        <!-- constraint: unique -->
+        <!-- constraint: notNull -->
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="a_category_name" name="name" visibility="private" isUnique="true">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+        <!-- constraint: unique -->
+        <!-- constraint: notNull -->
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="c_tag" name="Tag" visibility="public">
+      <!-- stereotype: entity -->
+      <ownedAttribute xmi:type="uml:Property" xmi:id="a_tag_id" name="id" visibility="private" isID="true" isUnique="true">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+        <!-- constraint: primaryKey -->
+        <!-- constraint: unique -->
+        <!-- constraint: notNull -->
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="a_tag_name" name="name" visibility="private" isUnique="true">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+        <!-- constraint: unique -->
+        <!-- constraint: notNull -->
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="r_user_post">
+      <memberEnd xmi:idref="r_user_post_srcEnd"/>
+      <memberEnd xmi:idref="r_user_post_tgtEnd"/>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="r_user_post_srcEnd" name="" visibility="public" isUnique="true">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#c_user"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="r_user_post_tgtEnd" name="" visibility="public" isUnique="true">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#c_post"/>
+        <lowerValue xmi:type="uml:LiteralInteger" value="0"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="r_post_comment">
+      <memberEnd xmi:idref="r_post_comment_srcEnd"/>
+      <memberEnd xmi:idref="r_post_comment_tgtEnd"/>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="r_post_comment_srcEnd" name="" visibility="public" isUnique="true">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#c_post"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="r_post_comment_tgtEnd" name="" visibility="public" isUnique="true" aggregation="composite">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#c_comment"/>
+        <lowerValue xmi:type="uml:LiteralInteger" value="0"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="r_category_post">
+      <memberEnd xmi:idref="r_category_post_srcEnd"/>
+      <memberEnd xmi:idref="r_category_post_tgtEnd"/>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="r_category_post_srcEnd" name="" visibility="public" isUnique="true">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#c_category"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="r_category_post_tgtEnd" name="" visibility="public" isUnique="true" aggregation="shared">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#c_post"/>
+        <lowerValue xmi:type="uml:LiteralInteger" value="0"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="r_post_tag">
+      <memberEnd xmi:idref="r_post_tag_srcEnd"/>
+      <memberEnd xmi:idref="r_post_tag_tgtEnd"/>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="r_post_tag_srcEnd" name="" visibility="public" isUnique="true">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#c_post"/>
+        <lowerValue xmi:type="uml:LiteralInteger" value="0"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/>
+      </ownedAttribute>
+      <ownedAttribute xmi:type="uml:Property" xmi:id="r_post_tag_tgtEnd" name="" visibility="public" isUnique="true">
+        <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#c_tag"/>
+        <lowerValue xmi:type="uml:LiteralInteger" value="0"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/>
+      </ownedAttribute>
+    </packagedElement>
+  </uml:Model>
+
+  <!-- Diagram Layout Information -->
+  <diagram xmi:id="diagram_1774515288201" name="Class Diagram">
+    <diagramElement xmi:id="di_c_user" modelElement="c_user">
+      <bounds x="70.06419079245282" y="21.65547954716982" width="220" height="160"/>
+    </diagramElement>
+    <diagramElement xmi:id="di_c_post" modelElement="c_post">
+      <bounds x="420" y="100" width="220" height="160"/>
+    </diagramElement>
+    <diagramElement xmi:id="di_c_comment" modelElement="c_comment">
+      <bounds x="790.7571006792454" y="23.243544150943393" width="220" height="140"/>
+    </diagramElement>
+    <diagramElement xmi:id="di_c_category" modelElement="c_category">
+      <bounds x="196.185479245283" y="413.814520754717" width="220" height="140"/>
+    </diagramElement>
+    <diagramElement xmi:id="di_c_tag" modelElement="c_tag">
+      <bounds x="576.7629041509434" y="404.109681509434" width="220" height="140"/>
+    </diagramElement>
+  </diagram>
+
+</xmi:XMI>

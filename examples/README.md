@@ -1,5 +1,10 @@
 # Example: Blog Application Schema
 
+## Additional Sample
+
+- `full-relationships-10-classes.orm.json`: 10 class entity diagram that includes all UML relation types (`association`, `aggregation`, `composition`, `inheritance`, `realization`, `dependency`) and ORM relation types (`OneToOne`, `OneToMany`, `ManyToMany`) for broader testing.
+- `simple-5-classes.orm.json`: beginner-friendly 5 class diagram for quick testing (`User`, `Post`, `Comment`, `Category`, `Tag`) with common relations.
+
 This is an example UML to ORM diagram showing a simple blog application structure.
 
 ## Schema Overview

@@ -27,6 +27,14 @@ const sectionStyle: React.CSSProperties = {
   lineHeight: 1.6,
 };
 
+const HANDLE_STYLE: React.CSSProperties = {
+  background: 'rgba(59, 130, 246, 0.18)',
+  width: 14,
+  height: 14,
+  border: '1px solid rgba(15, 23, 42, 0.65)',
+  borderRadius: '50%',
+};
+
 export const EntityNode: React.FC<NodeProps<EntityNodeData>> = ({ data, selected }) => {
   const stereotype = data.stereotype || 'entity';
 
@@ -173,29 +181,15 @@ export const EntityNode: React.FC<NodeProps<EntityNodeData>> = ({ data, selected
         )}
       </div>
 
-      {/* Connection handles */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        style={{ background: '#3b82f6', width: 10, height: 10, border: '1px solid #0f172a', borderRadius: '50%' }}
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        style={{ background: '#3b82f6', width: 10, height: 10, border: '1px solid #0f172a', borderRadius: '50%' }}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        style={{ background: '#3b82f6', width: 10, height: 10, border: '1px solid #0f172a', borderRadius: '50%' }}
-      />
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="left"
-        style={{ background: '#3b82f6', width: 10, height: 10, border: '1px solid #0f172a', borderRadius: '50%' }}
-      />
+      {/* Connection handles on all sides so edges can auto-route to the cleanest border */}
+      <Handle id="target-top" type="target" position={Position.Top} style={HANDLE_STYLE} />
+      <Handle id="source-top" type="source" position={Position.Top} style={HANDLE_STYLE} />
+      <Handle id="target-right" type="target" position={Position.Right} style={HANDLE_STYLE} />
+      <Handle id="source-right" type="source" position={Position.Right} style={HANDLE_STYLE} />
+      <Handle id="target-bottom" type="target" position={Position.Bottom} style={HANDLE_STYLE} />
+      <Handle id="source-bottom" type="source" position={Position.Bottom} style={HANDLE_STYLE} />
+      <Handle id="target-left" type="target" position={Position.Left} style={HANDLE_STYLE} />
+      <Handle id="source-left" type="source" position={Position.Left} style={HANDLE_STYLE} />
     </div>
   );
 };

@@ -31,11 +31,50 @@ const edgeTypes: EdgeTypes = {
   umlRelation: UmlRelationEdge,
 };
 
-function createEdgeFromRelation(relation: Relation): Edge {
+type HandleSide = 'top' | 'right' | 'bottom' | 'left';
+
+const NODE_WIDTH_ESTIMATE = 240;
+const NODE_HEIGHT_ESTIMATE = 180;
+
+function getNodeCenter(entity?: ClassEntity) {
+  if (!entity) {
+    return { x: 0, y: 0 };
+  }
+
+  return {
+    x: entity.position.x + NODE_WIDTH_ESTIMATE / 2,
+    y: entity.position.y + NODE_HEIGHT_ESTIMATE / 2,
+  };
+}
+
+function pickBestHandleSides(sourceEntity?: ClassEntity, targetEntity?: ClassEntity): { sourceSide: HandleSide; targetSide: HandleSide } {
+  const sourceCenter = getNodeCenter(sourceEntity);
+  const targetCenter = getNodeCenter(targetEntity);
+  const dx = targetCenter.x - sourceCenter.x;
+  const dy = targetCenter.y - sourceCenter.y;
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    return dx >= 0
+      ? { sourceSide: 'right', targetSide: 'left' }
+      : { sourceSide: 'left', targetSide: 'right' };
+  }
+
+  return dy >= 0
+    ? { sourceSide: 'bottom', targetSide: 'top' }
+    : { sourceSide: 'top', targetSide: 'bottom' };
+}
+
+function createEdgeFromRelation(relation: Relation, entities: ClassEntity[]): Edge {
+  const sourceEntity = entities.find((entity) => entity.id === relation.sourceClassId);
+  const targetEntity = entities.find((entity) => entity.id === relation.targetClassId);
+  const { sourceSide, targetSide } = pickBestHandleSides(sourceEntity, targetEntity);
+
   return {
     id: relation.id,
     source: relation.sourceClassId,
     target: relation.targetClassId,
+    sourceHandle: `source-${sourceSide}`,
+    targetHandle: `target-${targetSide}`,
     type: 'umlRelation',
     data: { relation },
   };
@@ -93,7 +132,7 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
   ), [dispatch]);
 
   const mapSchemaToEdges = useCallback((schema: ProjectSchema): Edge[] => (
-    schema.relations.map((relation) => createEdgeFromRelation(relation))
+    schema.relations.map((relation) => createEdgeFromRelation(relation, schema.entities))
   ), []);
 
   const handleCopy = useCallback(() => {
@@ -254,7 +293,7 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
       // Use explicit id so edge.id matches relation.id
       setEdges((eds) => [
         ...eds,
-        createEdgeFromRelation(newRelation),
+        createEdgeFromRelation(newRelation, updatedSchema.entities),
       ]);
     },
     [setEdges, pushHistory, appState.schema, dispatch, postMessage]

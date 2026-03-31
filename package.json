@@ -112,6 +112,7 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts,tsx",
     "test": "node ./dist/test/runTest.js",
+    "test:local": "npm run compile && npx mocha --ui tdd dist/test/schemaValidator.test.js dist/test/prismaGenerator.test.js dist/test/generatorRegression.test.js dist/test/history.test.js dist/test/xmiRoundTrip.test.js",
     "package": "npm run preflight && npx -y node@20 $(which npx) -y @vscode/vsce@3.7.1 package",
     "publish": "npx @vscode/vsce@3.7.1 publish"
   },

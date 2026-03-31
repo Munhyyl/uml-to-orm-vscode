@@ -1,0 +1,392 @@
+{
+  "version": "1.0",
+  "entities": [
+    {
+      "id": "c_base_entity",
+      "name": "BaseEntity",
+      "stereotype": "abstract",
+      "attributes": [
+        {
+          "id": "a_base_id",
+          "name": "id",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": true,
+          "isNullable": false,
+          "isUnique": true
+        },
+        {
+          "id": "a_base_created_at",
+          "name": "createdAt",
+          "type": "DateTime",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": false,
+          "defaultValue": "now()"
+        }
+      ],
+      "methods": [],
+      "position": { "x": 120, "y": 80 }
+    },
+    {
+      "id": "c_user",
+      "name": "User",
+      "stereotype": "entity",
+      "attributes": [
+        {
+          "id": "a_user_id",
+          "name": "id",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": true,
+          "isNullable": false,
+          "isUnique": true
+        },
+        {
+          "id": "a_user_email",
+          "name": "email",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": true
+        },
+        {
+          "id": "a_user_name",
+          "name": "name",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": false
+        }
+      ],
+      "methods": [],
+      "position": { "x": 380, "y": 80 }
+    },
+    {
+      "id": "c_profile",
+      "name": "Profile",
+      "stereotype": "entity",
+      "attributes": [
+        {
+          "id": "a_profile_id",
+          "name": "id",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": true,
+          "isNullable": false,
+          "isUnique": true
+        },
+        {
+          "id": "a_profile_bio",
+          "name": "bio",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": true,
+          "isUnique": false
+        }
+      ],
+      "methods": [],
+      "position": { "x": 650, "y": 80 }
+    },
+    {
+      "id": "c_role",
+      "name": "Role",
+      "stereotype": "entity",
+      "attributes": [
+        {
+          "id": "a_role_id",
+          "name": "id",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": true,
+          "isNullable": false,
+          "isUnique": true
+        },
+        {
+          "id": "a_role_name",
+          "name": "name",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": true
+        }
+      ],
+      "methods": [],
+      "position": { "x": 920, "y": 80 }
+    },
+    {
+      "id": "c_permission",
+      "name": "Permission",
+      "stereotype": "entity",
+      "attributes": [
+        {
+          "id": "a_permission_id",
+          "name": "id",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": true,
+          "isNullable": false,
+          "isUnique": true
+        },
+        {
+          "id": "a_permission_code",
+          "name": "code",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": true
+        }
+      ],
+      "methods": [],
+      "position": { "x": 1190, "y": 80 }
+    },
+    {
+      "id": "c_post",
+      "name": "Post",
+      "stereotype": "entity",
+      "attributes": [
+        {
+          "id": "a_post_id",
+          "name": "id",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": true,
+          "isNullable": false,
+          "isUnique": true
+        },
+        {
+          "id": "a_post_title",
+          "name": "title",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": false
+        },
+        {
+          "id": "a_post_published",
+          "name": "published",
+          "type": "Boolean",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": false,
+          "defaultValue": "false"
+        }
+      ],
+      "methods": [],
+      "position": { "x": 270, "y": 340 }
+    },
+    {
+      "id": "c_comment",
+      "name": "Comment",
+      "stereotype": "entity",
+      "attributes": [
+        {
+          "id": "a_comment_id",
+          "name": "id",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": true,
+          "isNullable": false,
+          "isUnique": true
+        },
+        {
+          "id": "a_comment_content",
+          "name": "content",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": false
+        }
+      ],
+      "methods": [],
+      "position": { "x": 530, "y": 340 }
+    },
+    {
+      "id": "c_category",
+      "name": "Category",
+      "stereotype": "entity",
+      "attributes": [
+        {
+          "id": "a_category_id",
+          "name": "id",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": true,
+          "isNullable": false,
+          "isUnique": true
+        },
+        {
+          "id": "a_category_name",
+          "name": "name",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": true
+        }
+      ],
+      "methods": [],
+      "position": { "x": 790, "y": 340 }
+    },
+    {
+      "id": "c_tag",
+      "name": "Tag",
+      "stereotype": "entity",
+      "attributes": [
+        {
+          "id": "a_tag_id",
+          "name": "id",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": true,
+          "isNullable": false,
+          "isUnique": true
+        },
+        {
+          "id": "a_tag_name",
+          "name": "name",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": true
+        }
+      ],
+      "methods": [],
+      "position": { "x": 1060, "y": 340 }
+    },
+    {
+      "id": "c_notification_service",
+      "name": "NotificationService",
+      "stereotype": "interface",
+      "attributes": [
+        {
+          "id": "a_ns_id",
+          "name": "id",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": true,
+          "isNullable": false,
+          "isUnique": true
+        }
+      ],
+      "methods": [
+        {
+          "id": "m_ns_notify",
+          "name": "notify",
+          "returnType": "void",
+          "visibility": "public",
+          "parameters": [
+            { "name": "message", "type": "String" }
+          ],
+          "isAbstract": true
+        }
+      ],
+      "position": { "x": 1330, "y": 340 }
+    }
+  ],
+  "relations": [
+    {
+      "id": "r_user_profile",
+      "sourceClassId": "c_user",
+      "targetClassId": "c_profile",
+      "type": "OneToOne",
+      "umlType": "association",
+      "sourceMultiplicity": "1",
+      "targetMultiplicity": "1",
+      "onDelete": "Cascade"
+    },
+    {
+      "id": "r_user_post",
+      "sourceClassId": "c_user",
+      "targetClassId": "c_post",
+      "type": "OneToMany",
+      "umlType": "association",
+      "sourceMultiplicity": "1",
+      "targetMultiplicity": "0..*",
+      "onDelete": "Restrict"
+    },
+    {
+      "id": "r_post_comment",
+      "sourceClassId": "c_post",
+      "targetClassId": "c_comment",
+      "type": "OneToMany",
+      "umlType": "composition",
+      "sourceMultiplicity": "1",
+      "targetMultiplicity": "0..*",
+      "onDelete": "Cascade"
+    },
+    {
+      "id": "r_category_post",
+      "sourceClassId": "c_category",
+      "targetClassId": "c_post",
+      "type": "OneToMany",
+      "umlType": "aggregation",
+      "sourceMultiplicity": "1",
+      "targetMultiplicity": "0..*",
+      "onDelete": "SetNull"
+    },
+    {
+      "id": "r_post_tag",
+      "sourceClassId": "c_post",
+      "targetClassId": "c_tag",
+      "type": "ManyToMany",
+      "umlType": "association",
+      "sourceMultiplicity": "0..*",
+      "targetMultiplicity": "0..*"
+    },
+    {
+      "id": "r_role_permission",
+      "sourceClassId": "c_role",
+      "targetClassId": "c_permission",
+      "type": "ManyToMany",
+      "umlType": "association",
+      "sourceMultiplicity": "0..*",
+      "targetMultiplicity": "0..*"
+    },
+    {
+      "id": "r_user_role",
+      "sourceClassId": "c_user",
+      "targetClassId": "c_role",
+      "type": "ManyToMany",
+      "umlType": "association",
+      "sourceMultiplicity": "0..*",
+      "targetMultiplicity": "0..*"
+    },
+    {
+      "id": "r_user_inherits_base",
+      "sourceClassId": "c_user",
+      "targetClassId": "c_base_entity",
+      "type": "OneToOne",
+      "umlType": "inheritance"
+    },
+    {
+      "id": "r_user_realizes_notification",
+      "sourceClassId": "c_user",
+      "targetClassId": "c_notification_service",
+      "type": "OneToOne",
+      "umlType": "realization"
+    },
+    {
+      "id": "r_post_depends_notification",
+      "sourceClassId": "c_post",
+      "targetClassId": "c_notification_service",
+      "type": "OneToOne",
+      "umlType": "dependency"
+    }
+  ],
+  "config": {
+    "targetLanguage": "TypeScript",
+    "orm": "Prisma",
+    "projectName": "FullRelationshipsSample"
+  }
+}
