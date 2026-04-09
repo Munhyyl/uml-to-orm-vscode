@@ -32,10 +32,22 @@
           "isPrimary": false,
           "isNullable": false,
           "isUnique": false
+        },
+        {
+          "id": "a_user_preferences",
+          "name": "preferences",
+          "type": "JSON",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": true,
+          "isUnique": false
         }
       ],
       "methods": [],
-      "position": { "x": 120, "y": 100 }
+      "position": {
+        "x": 120,
+        "y": 100
+      }
     },
     {
       "id": "c_post",
@@ -68,10 +80,31 @@
           "isPrimary": false,
           "isNullable": true,
           "isUnique": false
+        },
+        {
+          "id": "a_post_published_at",
+          "name": "publishedAt",
+          "type": "DateTime",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": false
+        },
+        {
+          "id": "a_post_price",
+          "name": "price",
+          "type": "Decimal",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": false
         }
       ],
       "methods": [],
-      "position": { "x": 420, "y": 100 }
+      "position": {
+        "x": 420,
+        "y": 100
+      }
     },
     {
       "id": "c_comment",
@@ -95,10 +128,22 @@
           "isPrimary": false,
           "isNullable": false,
           "isUnique": false
+        },
+        {
+          "id": "a_comment_attachment",
+          "name": "attachment",
+          "type": "Bytes",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": true,
+          "isUnique": false
         }
       ],
       "methods": [],
-      "position": { "x": 720, "y": 100 }
+      "position": {
+        "x": 720,
+        "y": 100
+      }
     },
     {
       "id": "c_category",
@@ -125,7 +170,10 @@
         }
       ],
       "methods": [],
-      "position": { "x": 280, "y": 330 }
+      "position": {
+        "x": 280,
+        "y": 330
+      }
     },
     {
       "id": "c_tag",
@@ -152,7 +200,10 @@
         }
       ],
       "methods": [],
-      "position": { "x": 560, "y": 330 }
+      "position": {
+        "x": 560,
+        "y": 330
+      }
     }
   ],
   "relations": [
@@ -197,8 +248,9 @@
     }
   ],
   "config": {
-    "targetLanguage": "TypeScript",
-    "orm": "Prisma",
-    "projectName": "SimpleFiveClasses"
+    "targetLanguage": "Java",
+    "orm": "Hibernate",
+    "projectName": "SimpleFiveClasses",
+    "database": "PostgreSQL"
   }
 }

@@ -1,12 +1,29 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { DiagramEditorProvider } from './editor/diagramEditorProvider';
 import { createEmptySchema } from './domain/schema/schemaOperations';
 import { CodeGeneratorService } from './generators/codeGeneratorService';
+import { DdlGeneratorService } from './generators/ddlGeneratorService';
+import { RepositoryGeneratorService } from './generators/repositoryGeneratorService';
 import { SchemaParserService } from './parsers/schemaParserService';
-import { OrmType, TargetLanguage } from './types/schema';
+import { OrmType, ProjectSchema, TargetLanguage } from './types/schema';
+import { ParseResult } from './types/parsing';
 import { projectSchemaToUMLModel } from './types/umlConverter';
 import { exportToXMI } from './xmi/xmiExporter';
 import { importFromXMI } from './xmi/xmiImporter';
+import {
+  buildDdlFileName,
+  buildGeneratedFileName,
+  getAllTargetLanguages,
+  getDefaultDatabase,
+  getOrmsForLanguage,
+  getOutputFilters,
+  getRepositoryOutputFilters,
+  getSupportedDatabases,
+  buildRepositoryFileName,
+  resolveDatabase,
+} from './shared/ormCatalog';
+import { formatParseSummary } from './shared/artifactPresentation';
 
 const REFACTOR_VIEW_TYPE = 'uml-orm-refactor.diagramEditor';
 const REFACTOR_PROJECT_VIEW_ID = 'uml-orm-refactor.projectView';
@@ -15,6 +32,8 @@ const ACTIONS_LABEL = '⚙ Actions';
 const REFACTOR_COMMANDS = {
   openEditor: 'uml-orm-refactor.openEditor',
   generateCode: 'uml-orm-refactor.generateCode',
+  generateDDL: 'uml-orm-refactor.generateDDL',
+  generateRepository: 'uml-orm-refactor.generateRepository',
   importSchema: 'uml-orm-refactor.importSchema',
   exportXMI: 'uml-orm-refactor.exportXMI',
   importXMI: 'uml-orm-refactor.importXMI',
@@ -31,6 +50,115 @@ function getFileName(uri: vscode.Uri): string {
 async function openFileBeside(uri: vscode.Uri): Promise<void> {
   const doc = await vscode.workspace.openTextDocument(uri);
   await vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.Beside });
+}
+
+function cloneSchema(schema: ProjectSchema): ProjectSchema {
+  return JSON.parse(JSON.stringify(schema)) as ProjectSchema;
+}
+
+function getSchemaFromTextEditor(): ProjectSchema | undefined {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor || !editor.document.fileName.endsWith('.orm.json')) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(editor.document.getText()) as ProjectSchema;
+  } catch {
+    void vscode.window.showErrorMessage('Failed to parse schema from active editor.');
+    return undefined;
+  }
+}
+
+async function promptGenerationTarget(schema: ProjectSchema): Promise<ProjectSchema | undefined> {
+  const workingSchema = cloneSchema(schema);
+  const languagePick = await vscode.window.showQuickPick(
+    getAllTargetLanguages().map((language) => ({
+      label: language,
+      description: language === workingSchema.config.targetLanguage ? '(одоогийн)' : '',
+    })),
+    { placeHolder: 'Хэл сонгоно уу', title: 'Код генерац — Хэл' },
+  );
+  if (!languagePick) {
+    return undefined;
+  }
+
+  const selectedLanguage = languagePick.label as TargetLanguage;
+  const ormChoices = getOrmsForLanguage(selectedLanguage);
+  let selectedOrm: OrmType = ormChoices[0];
+  if (ormChoices.length > 1) {
+    const ormPick = await vscode.window.showQuickPick(
+      ormChoices.map((orm) => ({
+        label: orm,
+        description: orm === workingSchema.config.orm ? '(одоогийн)' : '',
+      })),
+      { placeHolder: 'ORM сонгоно уу', title: 'Код генерац — ORM' },
+    );
+    if (!ormPick) {
+      return undefined;
+    }
+    selectedOrm = ormPick.label as OrmType;
+  }
+
+  const databaseChoices = getSupportedDatabases(selectedOrm);
+  let selectedDatabase = resolveDatabase(workingSchema.config);
+  if (!databaseChoices.includes(selectedDatabase)) {
+    selectedDatabase = getDefaultDatabase(selectedOrm);
+  }
+  if (databaseChoices.length > 1) {
+    const databasePick = await vscode.window.showQuickPick(
+      databaseChoices.map((database) => ({
+        label: database,
+        description: database === selectedDatabase ? '(одоогийн)' : '',
+      })),
+      { placeHolder: 'Өгөгдлийн сан сонгоно уу', title: 'Код генерац — Database' },
+    );
+    if (!databasePick) {
+      return undefined;
+    }
+    selectedDatabase = databasePick.label as typeof selectedDatabase;
+  }
+
+  workingSchema.config.targetLanguage = selectedLanguage;
+  workingSchema.config.orm = selectedOrm;
+  workingSchema.config.database = selectedDatabase;
+  return workingSchema;
+}
+
+async function resolveSchemaForGeneration(editorProvider: DiagramEditorProvider): Promise<ProjectSchema | undefined> {
+  return editorProvider.getActiveSchema() || getSchemaFromTextEditor();
+}
+
+function buildImportSchemaFileName(sourceFileUri: vscode.Uri): string {
+  const extension = path.extname(sourceFileUri.fsPath);
+  const baseName = path.basename(sourceFileUri.fsPath, extension);
+  return `${baseName}.orm.json`;
+}
+
+function writeParseDiagnostics(
+  outputChannel: vscode.OutputChannel,
+  sourceUri: vscode.Uri,
+  parseResult: ParseResult,
+): void {
+  const summary = formatParseSummary(parseResult);
+  outputChannel.clear();
+  outputChannel.appendLine(`Import diagnostics for ${sourceUri.fsPath}`);
+  outputChannel.appendLine(summary.detail);
+  if (parseResult.issues.length > 0) {
+    outputChannel.appendLine('');
+    outputChannel.appendLine('Issue list:');
+    parseResult.issues.forEach((issue, index) => {
+      const location = issue.location
+        ? ` @ ${issue.location.startLine}:${issue.location.startColumn}`
+        : '';
+      const scope = issue.entityName
+        ? ` [${issue.entityName}${issue.memberName ? `.${issue.memberName}` : ''}]`
+        : '';
+      outputChannel.appendLine(
+        `${index + 1}. ${issue.severity.toUpperCase()} ${issue.code}${scope}${location} - ${issue.message}`,
+      );
+    });
+  }
 }
 
 // ─── Activity Bar TreeDataProvider ─────────────────────────────────
@@ -114,6 +242,20 @@ class ProjectViewProvider implements vscode.TreeDataProvider<ProjectTreeItem> {
           new vscode.ThemeIcon('play'),
         ),
         new ProjectTreeItem(
+          'Generate DDL',
+          vscode.TreeItemCollapsibleState.None,
+          'action',
+          { command: REFACTOR_COMMANDS.generateDDL, title: 'Generate DDL' },
+          new vscode.ThemeIcon('database'),
+        ),
+        new ProjectTreeItem(
+          'Generate Repository',
+          vscode.TreeItemCollapsibleState.None,
+          'action',
+          { command: REFACTOR_COMMANDS.generateRepository, title: 'Generate Repository' },
+          new vscode.ThemeIcon('repo'),
+        ),
+        new ProjectTreeItem(
           'Import Schema',
           vscode.TreeItemCollapsibleState.None,
           'action',
@@ -143,6 +285,8 @@ class ProjectViewProvider implements vscode.TreeDataProvider<ProjectTreeItem> {
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('UML to ORM Generator extension is now active');
+  const diagnosticsChannel = vscode.window.createOutputChannel('UML to ORM');
+  context.subscriptions.push(diagnosticsChannel);
 
   // Register custom editor for .orm.json files
   const editorProvider = new DiagramEditorProvider(context);
@@ -193,6 +337,104 @@ export function activate(context: vscode.ExtensionContext) {
   watcher.onDidDelete(scheduleProjectViewRefresh);
   watcher.onDidChange(scheduleProjectViewRefresh);
 
+  const runGenerationWorkflow = async (mode: 'code' | 'ddl' | 'repository') => {
+    const schema = await resolveSchemaForGeneration(editorProvider);
+    if (!schema) {
+      vscode.window.showErrorMessage('No diagram open. Please open a .orm.json file first.');
+      return;
+    }
+
+    if (!schema.entities || schema.entities.length === 0) {
+      vscode.window.showErrorMessage('No entities in diagram. Add entities before generating output.');
+      return;
+    }
+
+    const generationSchema = await promptGenerationTarget(schema);
+    if (!generationSchema) {
+      return;
+    }
+
+    try {
+      const projectName = generationSchema.config.projectName || 'schema';
+      const database = resolveDatabase(generationSchema.config);
+
+      if (mode === 'code') {
+        const generator = new CodeGeneratorService();
+        const code = await generator.generate(generationSchema);
+        const defaultFileName = buildGeneratedFileName(projectName, generationSchema.config.orm, database);
+        const filterLabel = getOutputFilters(generationSchema.config.orm);
+        const workspaceFolder = getPrimaryWorkspaceFolder();
+        const defaultUri = workspaceFolder
+          ? vscode.Uri.joinPath(workspaceFolder.uri, defaultFileName)
+          : undefined;
+
+        const saveUri = await vscode.window.showSaveDialog({
+          defaultUri,
+          filters: { ...filterLabel, 'All files': ['*'] },
+          title: `${generationSchema.config.orm} (${database}) код хадгалах`,
+        });
+        if (!saveUri) {
+          return;
+        }
+
+        await vscode.workspace.fs.writeFile(saveUri, Buffer.from(code));
+        await openFileBeside(saveUri);
+        vscode.window.showInformationMessage(
+          `✅ ${generationSchema.config.orm} (${database}) код үүсгэгдлээ: ${getFileName(saveUri)}`,
+        );
+        return;
+      }
+
+      if (mode === 'repository') {
+        const repositoryCode = await new RepositoryGeneratorService().generate(generationSchema);
+        const defaultFileName = buildRepositoryFileName(projectName, generationSchema.config.orm, database);
+        const workspaceFolder = getPrimaryWorkspaceFolder();
+        const defaultUri = workspaceFolder
+          ? vscode.Uri.joinPath(workspaceFolder.uri, defaultFileName)
+          : undefined;
+
+        const saveUri = await vscode.window.showSaveDialog({
+          defaultUri,
+          filters: { ...getRepositoryOutputFilters(generationSchema.config.orm), 'All files': ['*'] },
+          title: `${generationSchema.config.orm} (${database}) repository хадгалах`,
+        });
+        if (!saveUri) {
+          return;
+        }
+
+        await vscode.workspace.fs.writeFile(saveUri, Buffer.from(repositoryCode));
+        await openFileBeside(saveUri);
+        vscode.window.showInformationMessage(
+          `✅ ${generationSchema.config.orm} (${database}) repository үүсгэгдлээ: ${getFileName(saveUri)}`,
+        );
+        return;
+      }
+
+      const ddl = new DdlGeneratorService().generate(generationSchema);
+      const workspaceFolder = getPrimaryWorkspaceFolder();
+      const defaultUri = workspaceFolder
+        ? vscode.Uri.joinPath(workspaceFolder.uri, buildDdlFileName(projectName, database))
+        : undefined;
+
+      const saveUri = await vscode.window.showSaveDialog({
+        defaultUri,
+        filters: { SQL: ['sql'], 'All files': ['*'] },
+        title: `${database} DDL хадгалах`,
+      });
+      if (!saveUri) {
+        return;
+      }
+
+      await vscode.workspace.fs.writeFile(saveUri, Buffer.from(ddl));
+      vscode.window.showInformationMessage(
+        `✅ ${database} DDL үүсгэгдлээ: ${getFileName(saveUri)}`,
+      );
+      await openFileBeside(saveUri);
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to generate ${mode === 'code' ? 'code' : 'DDL'}: ${error}`);
+    }
+  };
+
   // Register commands
   context.subscriptions.push(
     vscode.commands.registerCommand(REFACTOR_COMMANDS.openEditor, async () => {
@@ -228,109 +470,19 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(REFACTOR_COMMANDS.generateCode, async () => {
-      // Try to get schema from the custom editor first
-      let schema = editorProvider.getActiveSchema();
+      await runGenerationWorkflow('code');
+    })
+  );
 
-      // Fallback: try active text editor (if .orm.json is opened as text)
-      if (!schema) {
-        const editor = vscode.window.activeTextEditor;
-        if (editor && editor.document.fileName.endsWith('.orm.json')) {
-          try {
-            schema = JSON.parse(editor.document.getText());
-          } catch {
-            vscode.window.showErrorMessage('Failed to parse schema from active editor.');
-            return;
-          }
-        }
-      }
+  context.subscriptions.push(
+    vscode.commands.registerCommand(REFACTOR_COMMANDS.generateDDL, async () => {
+      await runGenerationWorkflow('ddl');
+    })
+  );
 
-      if (!schema) {
-        vscode.window.showErrorMessage('No diagram open. Please open a .orm.json file first.');
-        return;
-      }
-
-      if (!schema.entities || schema.entities.length === 0) {
-        vscode.window.showErrorMessage('No entities in diagram. Add entities before generating code.');
-        return;
-      }
-
-      // ── Let user pick target language ──
-      const langMap: Record<TargetLanguage, OrmType[]> = {
-        'TypeScript': ['Prisma', 'TypeORM'],
-        'Python':     ['SQLAlchemy', 'Django'],
-        'Java':       ['Hibernate'],
-      };
-      const langPick = await vscode.window.showQuickPick(
-        Object.keys(langMap).map(l => ({ label: l, description: l === schema!.config.targetLanguage ? '(одоогийн)' : '' })),
-        { placeHolder: 'Хэл сонгоно уу', title: 'Код генерац — Хэл' }
-      );
-      if (!langPick) return;
-      const selectedLang = langPick.label as 'TypeScript' | 'Python' | 'Java';
-
-      // ── Let user pick ORM framework ──
-      const ormChoices = langMap[selectedLang];
-      let selectedOrm: OrmType = ormChoices[0];
-      if (ormChoices.length > 1) {
-        const ormPick = await vscode.window.showQuickPick(
-          ormChoices.map(o => ({ label: o, description: o === schema!.config.orm ? '(одоогийн)' : '' })),
-          { placeHolder: 'ORM сонгоно уу', title: 'Код генерац — ORM' }
-        );
-        if (!ormPick) return;
-        selectedOrm = ormPick.label as OrmType;
-      }
-
-      // Apply chosen language + ORM to schema for generation
-      schema.config.targetLanguage = selectedLang;
-      schema.config.orm = selectedOrm;
-
-      try {
-        const generator = new CodeGeneratorService();
-        const code = await generator.generate(schema);
-
-        // Determine file extension and nice default name
-        const extMap: Record<string, string> = {
-          'Prisma': 'prisma',
-          'TypeORM': 'ts',
-          'SQLAlchemy': 'py',
-          'Django': 'py',
-          'Hibernate': 'java',
-        };
-        const ext = extMap[schema.config.orm] || 'txt';
-        const projectName = schema.config.projectName || 'schema';
-        const ormSlug = schema.config.orm.toLowerCase();
-        const defaultFileName = ext === 'prisma'
-          ? `${projectName}.${ext}`
-          : `${projectName}_${ormSlug}.${ext}`;
-
-        // Let user pick save location
-        const filterMap: Record<string, Record<string, string[]>> = {
-          'prisma': { 'Prisma Schema': ['prisma'] },
-          'ts':     { 'TypeScript': ['ts'] },
-          'py':     { 'Python': ['py'] },
-          'java':   { 'Java': ['java'] },
-        };
-        const filterLabel = filterMap[ext] || { 'All files': ['*'] };
-
-        const workspaceFolder = getPrimaryWorkspaceFolder();
-        const defaultUri = workspaceFolder
-          ? vscode.Uri.joinPath(workspaceFolder.uri, defaultFileName)
-          : undefined;
-
-        const saveUri = await vscode.window.showSaveDialog({
-          defaultUri,
-          filters: { ...filterLabel, 'All files': ['*'] },
-          title: `${schema.config.orm} код хадгалах`,
-        });
-        if (!saveUri) return;
-
-        await vscode.workspace.fs.writeFile(saveUri, Buffer.from(code));
-        await openFileBeside(saveUri);
-
-        const savedName = getFileName(saveUri);
-        vscode.window.showInformationMessage(`✅ ${schema.config.orm} код үүсгэгдлээ: ${savedName}`);
-      } catch (error) {
-        vscode.window.showErrorMessage(`Failed to generate code: ${error}`);
-      }
+  context.subscriptions.push(
+    vscode.commands.registerCommand(REFACTOR_COMMANDS.generateRepository, async () => {
+      await runGenerationWorkflow('repository');
     })
   );
 
@@ -348,23 +500,40 @@ export function activate(context: vscode.ExtensionContext) {
 
       try {
         const parser = new SchemaParserService();
-        const schema = await parser.parseFile(files[0]);
-        
-        vscode.window.showInformationMessage('Schema imported successfully!');
-        console.log('Imported schema:', schema);
+        const parseResult = await parser.parseFile(files[0]);
+        const schema = parseResult.schema;
+        const summary = formatParseSummary(parseResult);
+        writeParseDiagnostics(diagnosticsChannel, files[0], parseResult);
 
-        // Save the imported schema as a new .orm.json file
         const workspaceFolder = getPrimaryWorkspaceFolder();
-        if (workspaceFolder) {
-          const newUri = vscode.Uri.joinPath(
-            workspaceFolder.uri,
-            `imported-${Date.now()}.orm.json`
+        const defaultImportUri = workspaceFolder
+          ? vscode.Uri.joinPath(workspaceFolder.uri, buildImportSchemaFileName(files[0]))
+          : undefined;
+        const targetUri = await vscode.window.showSaveDialog({
+          defaultUri: defaultImportUri,
+          filters: { 'UML ORM Schema': ['json'], 'All files': ['*'] },
+          title: 'Импортолсон схемийг хадгалах',
+        });
+        if (!targetUri) {
+          return;
+        }
+
+        await vscode.workspace.fs.writeFile(
+          targetUri,
+          Buffer.from(JSON.stringify(schema, null, 2))
+        );
+        await vscode.commands.executeCommand('vscode.openWith', targetUri, REFACTOR_VIEW_TYPE);
+
+        if (summary.errorCount > 0 || summary.warningCount > 0) {
+          const action = await vscode.window.showWarningMessage(
+            `Импорт хийгдлээ: ${summary.summary}`,
+            'Open Diagnostics',
           );
-          await vscode.workspace.fs.writeFile(
-            newUri,
-            Buffer.from(JSON.stringify(schema, null, 2))
-          );
-          await vscode.commands.executeCommand('vscode.openWith', newUri, REFACTOR_VIEW_TYPE);
+          if (action === 'Open Diagnostics') {
+            diagnosticsChannel.show(true);
+          }
+        } else {
+          vscode.window.showInformationMessage(`Импорт амжилттай: ${summary.summary}`);
         }
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to import schema: ${error}`);

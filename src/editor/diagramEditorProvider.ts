@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { ProjectSchema } from '../types/schema';
-import { CodeGeneratorService } from '../generators/codeGeneratorService';
 import { projectSchemaToUMLModel } from '../types/umlConverter';
 import { exportToXMI } from '../xmi/xmiExporter';
 import { ExtensionToWebviewMessage, WebviewToExtensionMessage, isWebviewMessage } from '../shared/contracts/messages';
+import { normalizeProjectSchema } from '../shared/ormCatalog';
 
 export class DiagramEditorProvider implements vscode.CustomEditorProvider<DiagramDocument> {
   public static readonly viewType = 'uml-orm-refactor.diagramEditor';
@@ -34,7 +34,7 @@ export class DiagramEditorProvider implements vscode.CustomEditorProvider<Diagra
   ): Promise<DiagramDocument> {
     const fileData = await vscode.workspace.fs.readFile(uri);
     const content = new TextDecoder().decode(fileData);
-    const schema: ProjectSchema = JSON.parse(content);
+    const schema: ProjectSchema = normalizeProjectSchema(JSON.parse(content));
     return new DiagramDocument(uri, schema);
   }
 
@@ -89,58 +89,13 @@ export class DiagramEditorProvider implements vscode.CustomEditorProvider<Diagra
           await document.save();
           break;
         case 'generateCode':
-          // Generate code directly from the current document schema
-          try {
-            const genSchema = document.schema;
-            if (!genSchema.entities || genSchema.entities.length === 0) {
-              vscode.window.showErrorMessage('No entities in diagram. Add entities before generating code.');
-              break;
-            }
-            const genService = new CodeGeneratorService();
-            const generatedCode = await genService.generate(genSchema);
-            
-            const extMap: Record<string, string> = {
-              'Prisma': 'prisma',
-              'TypeORM': 'ts',
-              'SQLAlchemy': 'py',
-              'Django': 'py',
-              'Hibernate': 'java',
-            };
-            const ext = extMap[genSchema.config.orm] || 'txt';
-            const projectName = genSchema.config.projectName || 'schema';
-            const ormSlug = genSchema.config.orm.toLowerCase();
-            const defaultFileName = ext === 'prisma'
-              ? `${projectName}.${ext}`
-              : `${projectName}_${ormSlug}.${ext}`;
-
-            const filterMap: Record<string, Record<string, string[]>> = {
-              'prisma': { 'Prisma Schema': ['prisma'] },
-              'ts':     { 'TypeScript': ['ts'] },
-              'py':     { 'Python': ['py'] },
-              'java':   { 'Java': ['java'] },
-            };
-            const filterLabel = filterMap[ext] || { 'All files': ['*'] };
-
-            const defaultUri = vscode.workspace.workspaceFolders?.[0]
-              ? vscode.Uri.joinPath(vscode.workspace.workspaceFolders[0].uri, defaultFileName)
-              : undefined;
-
-            const saveUri = await vscode.window.showSaveDialog({
-              defaultUri,
-              filters: { ...filterLabel, 'All files': ['*'] },
-              title: `${genSchema.config.orm} код хадгалах`,
-            });
-            if (!saveUri) break;
-
-            await vscode.workspace.fs.writeFile(saveUri, Buffer.from(generatedCode));
-            const openDoc = await vscode.workspace.openTextDocument(saveUri);
-            await vscode.window.showTextDocument(openDoc, { preview: false, viewColumn: vscode.ViewColumn.Beside });
-
-            const savedName = saveUri.path.split('/').pop();
-            vscode.window.showInformationMessage(`✅ ${genSchema.config.orm} код үүсгэгдлээ: ${savedName}`);
-          } catch (err) {
-            vscode.window.showErrorMessage(`Failed to generate code: ${err}`);
-          }
+          await vscode.commands.executeCommand('uml-orm-refactor.generateCode');
+          break;
+        case 'generateDDL':
+          await vscode.commands.executeCommand('uml-orm-refactor.generateDDL');
+          break;
+        case 'generateRepository':
+          await vscode.commands.executeCommand('uml-orm-refactor.generateRepository');
           break;
         case 'importSchema':
           await vscode.commands.executeCommand('uml-orm-refactor.importSchema');
@@ -222,7 +177,7 @@ export class DiagramEditorProvider implements vscode.CustomEditorProvider<Diagra
   async revertCustomDocument(document: DiagramDocument, _cancellation: vscode.CancellationToken): Promise<void> {
     const fileData = await vscode.workspace.fs.readFile(document.uri);
     const content = new TextDecoder().decode(fileData);
-    document.schema = JSON.parse(content);
+    document.schema = normalizeProjectSchema(JSON.parse(content));
   }
 
   async backupCustomDocument(document: DiagramDocument, _context: vscode.CustomDocumentBackupContext, cancellation: vscode.CancellationToken): Promise<vscode.CustomDocumentBackup> {

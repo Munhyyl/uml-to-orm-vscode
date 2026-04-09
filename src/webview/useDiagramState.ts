@@ -1,5 +1,5 @@
 import { useReducer, useCallback, useRef, useState } from 'react';
-import { ProjectSchema, ClassEntity, OrmType, TargetLanguage } from '../types/schema';
+import { ProjectSchema, ClassEntity, OrmType, TargetLanguage, DatabaseType } from '../types/schema';
 import {
   createHistory,
   pushHistory as pushHistoryState,
@@ -21,7 +21,7 @@ export type DiagramAction =
   | { type: 'SELECT_ENTITY'; payload: string | null }
   | { type: 'SELECT_RELATION'; payload: string | null }
   | { type: 'DESELECT_ALL' }
-  | { type: 'UPDATE_SCHEMA_CONFIG'; payload: { orm?: OrmType; targetLanguage?: TargetLanguage } }
+  | { type: 'UPDATE_SCHEMA_CONFIG'; payload: { orm?: OrmType; targetLanguage?: TargetLanguage; database?: DatabaseType } }
   | { type: 'CLEAR_SELECTION_BY_DELETION'; payload: { entityIds?: string[]; relationIds?: string[] } };
 
 // ─── Reducer Function ─────────────────────────────────────────
@@ -64,6 +64,7 @@ export function diagramReducer(state: DiagramState, action: DiagramAction): Diag
             ...state.schema.config,
             orm: action.payload.orm || state.schema.config.orm,
             targetLanguage: action.payload.targetLanguage || state.schema.config.targetLanguage,
+            database: action.payload.database || state.schema.config.database,
           },
         },
       };

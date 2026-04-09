@@ -19,9 +19,17 @@ import { EntityNode } from './EntityNode';
 import { Toolbar } from './Toolbar';
 import { PropertyPanel } from './PropertyPanel';
 import { UmlRelationEdge } from './UmlRelationEdge';
-import { ProjectSchema, ClassEntity, Relation, OrmType, TargetLanguage } from '../types/schema';
+import {
+  ProjectSchema,
+  ClassEntity,
+  Relation,
+  OrmType,
+  TargetLanguage,
+  DatabaseType,
+} from '../types/schema';
 import { createEntity, createRelation, removeEntities, removeRelations, upsertEntity, upsertRelation } from '../domain/schema/schemaOperations';
 import { useDiagramState, useClipboard, useVscodeMessaging, useConfirmation } from './useDiagramState';
+import { getDefaultDatabase, getSupportedDatabases, resolveDatabase } from '../shared/ormCatalog';
 
 const nodeTypes: NodeTypes = {
   entity: EntityNode,
@@ -400,9 +408,9 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
 
   const handleNodesChange = useCallback((changes: NodeChange[]) => {
     onNodesChange(changes);
-    const removedEntityIds = changes
-      .filter((change) => change.type === 'remove')
-      .map((change) => change.id);
+    const removedEntityIds = changes.flatMap((change) =>
+      change.type === 'remove' && 'id' in change ? [change.id] : []
+    );
 
     if (removedEntityIds.length === 0) return;
 
@@ -422,9 +430,9 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
 
   const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
     onEdgesChange(changes);
-    const removedRelationIds = changes
-      .filter((change) => change.type === 'remove')
-      .map((change) => change.id);
+    const removedRelationIds = changes.flatMap((change) =>
+      change.type === 'remove' && 'id' in change ? [change.id] : []
+    );
 
     if (removedRelationIds.length === 0) return;
 
@@ -496,12 +504,34 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
     showToast(`${appState.schema.config.orm} код үүсгэгдлээ`, 'success');
   }, [appState.schema, showToast, postMessage, getVscodeApi]);
 
+  const handleGenerateDDL = useCallback(() => {
+    if (!getVscodeApi()?.postMessage) {
+      showToast('VS Code API боломжгүй!', 'error');
+      return;
+    }
+    postMessage('updateSchema', { schema: appState.schema });
+    postMessage('generateDDL', {});
+    showToast(`${resolveDatabase(appState.schema.config)} DDL үүсгэж байна`, 'info');
+  }, [appState.schema, showToast, postMessage, getVscodeApi]);
+
+  const handleGenerateRepository = useCallback(() => {
+    if (!getVscodeApi()?.postMessage) {
+      showToast('VS Code API боломжгүй!', 'error');
+      return;
+    }
+    postMessage('updateSchema', { schema: appState.schema });
+    postMessage('generateRepository', {});
+    showToast(`${appState.schema.config.orm} repository үүсгэж байна`, 'info');
+  }, [appState.schema, showToast, postMessage, getVscodeApi]);
+
   const handleChangeOrm = useCallback((orm: OrmType) => {
+    const currentDatabase = resolveDatabase(appState.schema.config);
     const updatedSchema = {
       ...appState.schema,
       config: {
         ...appState.schema.config,
         orm,
+        database: getSupportedDatabases(orm).includes(currentDatabase) ? currentDatabase : getDefaultDatabase(orm),
       },
     };
     dispatch({ type: 'SET_SCHEMA', payload: updatedSchema });
@@ -515,6 +545,19 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
       config: {
         ...appState.schema.config,
         targetLanguage: lang,
+      },
+    };
+    dispatch({ type: 'SET_SCHEMA', payload: updatedSchema });
+    pushHistory(updatedSchema);
+    postMessage('updateSchema', { schema: updatedSchema });
+  }, [appState.schema, dispatch, pushHistory, postMessage]);
+
+  const handleChangeDatabase = useCallback((database: DatabaseType) => {
+    const updatedSchema = {
+      ...appState.schema,
+      config: {
+        ...appState.schema.config,
+        database,
       },
     };
     dispatch({ type: 'SET_SCHEMA', payload: updatedSchema });
@@ -556,6 +599,8 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
         onAddEntity={handleAddEntity}
         onSave={handleSaveSchema}
         onGenerateCode={handleGenerateCode}
+        onGenerateDDL={handleGenerateDDL}
+        onGenerateRepository={handleGenerateRepository}
         onImportSchema={handleImportSchema}
         onExportXMI={handleExportXMI}
         onImportXMI={handleImportXMI}
@@ -566,8 +611,10 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
         canRedo={canRedo}
         orm={appState.schema.config.orm}
         language={appState.schema.config.targetLanguage}
+        database={resolveDatabase(appState.schema.config)}
         onChangeOrm={handleChangeOrm}
         onChangeLanguage={handleChangeLanguage}
+        onChangeDatabase={handleChangeDatabase}
       />
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
@@ -717,7 +764,9 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
       }}>
         <span>{appState.schema.entities.length} entities</span>
         <span>{appState.schema.relations.length} relations</span>
-        <span style={{ marginLeft: 'auto' }}>{appState.schema.config.orm} / {appState.schema.config.targetLanguage}</span>
+        <span style={{ marginLeft: 'auto' }}>
+          {appState.schema.config.orm} / {appState.schema.config.targetLanguage} / {resolveDatabase(appState.schema.config)}
+        </span>
       </div>
 
       {/* ── Toast Notifications ── */}

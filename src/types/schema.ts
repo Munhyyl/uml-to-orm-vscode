@@ -5,6 +5,15 @@
 
 export type DataType = 'String' | 'Int' | 'Float' | 'Boolean' | 'DateTime' | 'JSON' | 'Bytes' | 'Decimal';
 export type Visibility = 'public' | 'private' | 'protected' | 'package';
+export type RelationOwner = 'source' | 'target' | 'none';
+
+export interface SourceLocation {
+  fileName?: string;
+  startLine: number;
+  startColumn: number;
+  endLine?: number;
+  endColumn?: number;
+}
 
 export interface Attribute {
   id: string;
@@ -16,7 +25,15 @@ export interface Attribute {
   isUnique: boolean;
   isStatic?: boolean;
   defaultValue?: string;
+  defaultExpression?: string;
   documentation?: string;
+  columnName?: string;
+  length?: number;
+  precision?: number;
+  scale?: number;
+  indexGroups?: string[];
+  uniqueGroups?: string[];
+  sourceLocation?: SourceLocation;
 }
 
 export interface Method {
@@ -71,6 +88,9 @@ export interface Relation {
   targetFieldName?: string;
   onDelete?: OnDeleteAction;
   documentation?: string;
+  relationOwner?: RelationOwner;
+  joinTableName?: string;
+  sourceLocation?: SourceLocation;
 }
 
 export interface ClassEntity {
@@ -80,15 +100,19 @@ export interface ClassEntity {
   attributes: Attribute[];
   methods?: Method[];
   documentation?: string;
+  tableName?: string;
+  sourceLocation?: SourceLocation;
   position: { x: number; y: number };
 }
 
 export type TargetLanguage = 'TypeScript' | 'Python' | 'Java';
 export type OrmType = 'Prisma' | 'TypeORM' | 'SQLAlchemy' | 'Django' | 'Hibernate';
+export type DatabaseType = 'PostgreSQL' | 'MySQL';
 
 export interface ProjectConfig {
   targetLanguage: TargetLanguage;
   orm: OrmType;
+  database?: DatabaseType;
   outputPath?: string;
   projectName?: string;
   description?: string;

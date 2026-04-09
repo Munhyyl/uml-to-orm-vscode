@@ -1,6 +1,8 @@
 import { ProjectSchema, ClassEntity, Attribute, Method } from '../../types/schema';
 import { CodeGenerator } from '../codeGeneratorService';
 import { getPrimaryAttributeName } from '../../domain/schema/schemaOperations';
+import { getHibernateDialectProfile } from '../ormDialectProfiles';
+import { resolveDatabase } from '../../shared/ormCatalog';
 
 export class HibernateGenerator implements CodeGenerator {
   async generate(schema: ProjectSchema): Promise<string> {
@@ -8,7 +10,10 @@ export class HibernateGenerator implements CodeGenerator {
       throw new Error('This generator only supports Hibernate');
     }
 
+    const database = resolveDatabase(schema.config);
+    const dialect = getHibernateDialectProfile(database);
     let output = '';
+    output += `// Hibernate entities for ${database}\n\n`;
 
     // Generate enums first
     for (const entity of schema.entities) {
@@ -20,14 +25,14 @@ export class HibernateGenerator implements CodeGenerator {
 
     for (const entity of schema.entities) {
       if (entity.stereotype === 'enum') continue;
-      output += this.generateEntity(entity, schema);
+      output += this.generateEntity(entity, schema, dialect);
       output += '\n\n// ' + '='.repeat(70) + '\n\n';
     }
 
     return output.trim();
   }
 
-  private generateEntity(entity: ClassEntity, schema: ProjectSchema): string {
+  private generateEntity(entity: ClassEntity, schema: ProjectSchema, dialect: ReturnType<typeof getHibernateDialectProfile>): string {
     const tableName = this.camelToSnake(entity.name);
     const imports = new Set<string>();
 
@@ -126,7 +131,7 @@ export class HibernateGenerator implements CodeGenerator {
 
     // Fields
     for (const attr of entity.attributes) {
-      code += this.generateField(attr);
+      code += this.generateField(attr, dialect);
     }
 
     // Relation fields
@@ -169,15 +174,12 @@ export class HibernateGenerator implements CodeGenerator {
     if (method.isAbstract) {
       code += `    ${vis}${stat}${abs} ${retType} ${method.name}(${params});\n\n`;
     } else {
-      code += `    ${vis}${stat} ${retType} ${method.name}(${params}) {\n`;
-      code += `        // TODO: implement\n`;
-      code += `        throw new UnsupportedOperationException("Not implemented");\n`;
-      code += `    }\n\n`;
+      code += `    // UML method placeholder: ${vis}${stat} ${retType} ${method.name}(${params})\n\n`;
     }
     return code;
   }
 
-  private generateField(attr: Attribute): string {
+  private generateField(attr: Attribute, dialect: ReturnType<typeof getHibernateDialectProfile>): string {
     let code = '';
     const javaType = this.mapDataType(attr.type);
     const columnName = this.camelToSnake(attr.name);
@@ -214,8 +216,16 @@ export class HibernateGenerator implements CodeGenerator {
         columnProps.push('precision = 19');
         columnProps.push('scale = 4');
       }
+      const columnDefinition: string[] = [];
+      const dialectColumnDefinition = dialect.columnDefinitionByType[attr.type];
+      if (dialectColumnDefinition) {
+        columnDefinition.push(dialectColumnDefinition);
+      }
       if (attr.defaultValue) {
-        columnProps.push(`columnDefinition = "default ${attr.defaultValue}"`);
+        columnDefinition.push(`default ${attr.defaultValue}`);
+      }
+      if (columnDefinition.length > 0) {
+        columnProps.push(`columnDefinition = "${columnDefinition.join(' ')}"`);
       }
 
       code += `    @Column(${columnProps.join(', ')})\n`;

@@ -19,6 +19,7 @@ import {
   toUMLPrimitiveType, fromUMLPrimitiveType,
   parseMultiplicityString, multiplicityToString,
 } from './umlMetamodel';
+import { getDefaultDatabase } from '../shared/ormCatalog';
 
 // ─── IR --> UML Metamodel ────────────────────────────────────────────
 
@@ -211,7 +212,7 @@ function relationToAggregation(relation: Relation): AggregationKind {
 export function umlModelToProjectSchema(
   model: UMLModel,
   diagram?: UMLDiagram,
-  config?: { targetLanguage: string; orm: string }
+  config?: { targetLanguage: string; orm: string; database?: string }
 ): ProjectSchema {
   const entities: ClassEntity[] = [];
   const relations: Relation[] = [];
@@ -255,6 +256,7 @@ export function umlModelToProjectSchema(
     config: {
       targetLanguage: (config?.targetLanguage || 'TypeScript') as any,
       orm: (config?.orm || 'Prisma') as any,
+      database: (config?.database || getDefaultDatabase((config?.orm || 'Prisma') as any)) as any,
       projectName: model.name,
     },
   };

@@ -10,6 +10,7 @@ import {
   Visibility,
   deriveRelationType,
 } from '../../types/schema';
+import { getDefaultDatabase } from '../../shared/ormCatalog';
 
 export function createEmptySchema(projectName?: string): ProjectSchema {
   return {
@@ -19,6 +20,7 @@ export function createEmptySchema(projectName?: string): ProjectSchema {
     config: {
       targetLanguage: 'TypeScript',
       orm: 'Prisma',
+      database: getDefaultDatabase('Prisma'),
       projectName,
     },
   };
@@ -94,6 +96,7 @@ export function createRelation(sourceClassId: string, targetClassId: string, uml
     umlType,
     sourceMultiplicity,
     targetMultiplicity,
+    relationOwner: isDataRelation(umlType) ? 'source' : 'none',
   };
 }
 

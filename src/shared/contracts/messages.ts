@@ -5,6 +5,8 @@ export type WebviewToExtensionMessage =
   | { command: 'updateSchema'; schema: ProjectSchema }
   | { command: 'saveSchema'; schema: ProjectSchema }
   | { command: 'generateCode' }
+  | { command: 'generateDDL' }
+  | { command: 'generateRepository' }
   | { command: 'importSchema' }
   | { command: 'exportXMI' }
   | { command: 'importXMI' }

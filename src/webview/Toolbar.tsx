@@ -1,19 +1,13 @@
 import React from 'react';
-import { OrmType, TargetLanguage } from '../types/schema';
-
-// ORM-ууд хэлээс хамаарна
-const ORM_BY_LANGUAGE: Record<TargetLanguage, OrmType[]> = {
-  TypeScript: ['Prisma', 'TypeORM'],
-  Python: ['SQLAlchemy', 'Django'],
-  Java: ['Hibernate'],
-};
-
-const ALL_LANGUAGES: TargetLanguage[] = ['TypeScript', 'Python', 'Java'];
+import { DatabaseType, OrmType, TargetLanguage } from '../types/schema';
+import { getAllTargetLanguages, getOrmsForLanguage, getSupportedDatabases, resolveDatabase } from '../shared/ormCatalog';
 
 interface ToolbarProps {
   onAddEntity: () => void;
   onSave: () => void;
   onGenerateCode: () => void;
+  onGenerateDDL: () => void;
+  onGenerateRepository: () => void;
   onImportSchema: () => void;
   onExportXMI: () => void;
   onImportXMI: () => void;
@@ -24,8 +18,10 @@ interface ToolbarProps {
   canRedo: boolean;
   orm: OrmType;
   language: TargetLanguage;
+  database: DatabaseType;
   onChangeOrm: (orm: OrmType) => void;
   onChangeLanguage: (lang: TargetLanguage) => void;
+  onChangeDatabase: (database: DatabaseType) => void;
 }
 
 const selectStyle: React.CSSProperties = {
@@ -43,6 +39,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onAddEntity,
   onSave,
   onGenerateCode,
+  onGenerateDDL,
+  onGenerateRepository,
   onImportSchema,
   onExportXMI,
   onImportXMI,
@@ -53,10 +51,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   canRedo,
   orm,
   language,
+  database,
   onChangeOrm,
   onChangeLanguage,
+  onChangeDatabase,
 }) => {
-  const availableOrms = ORM_BY_LANGUAGE[language] || [];
+  const availableOrms = getOrmsForLanguage(language);
+  const availableDatabases = getSupportedDatabases(orm);
+  const selectedDatabase = availableDatabases.includes(database)
+    ? database
+    : resolveDatabase({ orm, database });
   const baseButton: React.CSSProperties = {
     padding: '8px 12px',
     borderRadius: '6px',
@@ -104,6 +108,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           Generate Code
         </button>
         <button
+          onClick={onGenerateDDL}
+          style={{ ...baseButton, backgroundColor: '#7c3aed', borderColor: '#7c3aed', color: '#ffffff', fontWeight: 600 }}
+        >
+          Generate DDL
+        </button>
+        <button
+          onClick={onGenerateRepository}
+          style={{ ...baseButton, backgroundColor: '#2563eb', borderColor: '#2563eb', color: '#ffffff', fontWeight: 600 }}
+        >
+          Generate Repository
+        </button>
+        <button
           onClick={onImportSchema}
           style={{ ...baseButton, backgroundColor: '#0f766e', borderColor: '#0f766e', color: '#ffffff', fontWeight: 600 }}
         >
@@ -117,7 +133,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         </button>
         <button
           onClick={onImportXMI}
-          style={{ ...baseButton, backgroundColor: '#7c3aed', borderColor: '#7c3aed', color: '#ffffff', fontWeight: 600 }}
+          style={{ ...baseButton, backgroundColor: '#9333ea', borderColor: '#9333ea', color: '#ffffff', fontWeight: 600 }}
         >
           Import XMI
         </button>
@@ -132,14 +148,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               const newLang = e.target.value as TargetLanguage;
               onChangeLanguage(newLang);
               // Автоматаар тухайн хэлний эхний ORM сонгох
-              const newOrms = ORM_BY_LANGUAGE[newLang];
+              const newOrms = getOrmsForLanguage(newLang);
               if (newOrms && !newOrms.includes(orm)) {
                 onChangeOrm(newOrms[0]);
               }
             }}
             style={selectStyle}
           >
-            {ALL_LANGUAGES.map((lang) => (
+            {getAllTargetLanguages().map((lang) => (
               <option key={lang} value={lang}>
                 {lang}
               </option>
@@ -157,6 +173,21 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             {availableOrms.map((o) => (
               <option key={o} value={o}>
                 {o}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '12px', color: '#9ca3af' }}>Database</span>
+          <select
+            value={selectedDatabase}
+            onChange={(e) => onChangeDatabase(e.target.value as DatabaseType)}
+            style={selectStyle}
+          >
+            {availableDatabases.map((db) => (
+              <option key={db} value={db}>
+                {db}
               </option>
             ))}
           </select>
