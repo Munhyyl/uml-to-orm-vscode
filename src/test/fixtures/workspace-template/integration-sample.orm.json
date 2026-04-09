@@ -1,0 +1,99 @@
+{
+  "version": "1.0",
+  "entities": [
+    {
+      "id": "entity_user",
+      "name": "User",
+      "stereotype": "entity",
+      "attributes": [
+        {
+          "id": "user_id",
+          "name": "id",
+          "type": "Int",
+          "visibility": "private",
+          "isPrimary": true,
+          "isNullable": false,
+          "isUnique": true
+        },
+        {
+          "id": "user_email",
+          "name": "email",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": true
+        },
+        {
+          "id": "user_preferences",
+          "name": "preferences",
+          "type": "JSON",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": true,
+          "isUnique": false
+        }
+      ],
+      "position": {
+        "x": 100,
+        "y": 100
+      }
+    },
+    {
+      "id": "entity_post",
+      "name": "Post",
+      "stereotype": "entity",
+      "attributes": [
+        {
+          "id": "post_id",
+          "name": "id",
+          "type": "Int",
+          "visibility": "private",
+          "isPrimary": true,
+          "isNullable": false,
+          "isUnique": true
+        },
+        {
+          "id": "post_title",
+          "name": "title",
+          "type": "String",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": false
+        },
+        {
+          "id": "post_published_at",
+          "name": "publishedAt",
+          "type": "DateTime",
+          "visibility": "private",
+          "isPrimary": false,
+          "isNullable": false,
+          "isUnique": false
+        }
+      ],
+      "position": {
+        "x": 420,
+        "y": 100
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "rel_user_posts",
+      "sourceClassId": "entity_user",
+      "targetClassId": "entity_post",
+      "type": "OneToMany",
+      "umlType": "association",
+      "sourceFieldName": "posts",
+      "targetFieldName": "author",
+      "relationOwner": "target"
+    }
+  ],
+  "config": {
+    "targetLanguage": "TypeScript",
+    "orm": "Prisma",
+    "database": "PostgreSQL",
+    "projectName": "integration_sample"
+  }
+}
