@@ -4,8 +4,8 @@
 
 ### Prerequisites
 
-- Node.js 18+
-- npm or yarn
+- Node.js 20.x
+- npm
 - VS Code 1.85+
 
 ### Installation
@@ -13,7 +13,10 @@
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd thesis
+cd uml-orm-refactor
+
+# Use the project runtime
+nvm use
 
 # Install dependencies
 npm install
@@ -35,9 +38,12 @@ npm run build:webview
 
 To add support for a new ORM:
 
-1. Create a new file in `src/generators/orm/` (e.g., `newOrmGenerator.ts`)
-2. Implement the `CodeGenerator` interface
-3. Register it in `CodeGeneratorService`
+1. Add a catalog entry in `src/shared/ormCatalog.ts`
+2. Create a generator in `src/generators/orm/`
+3. Register it in `src/generators/codeGeneratorService.ts`
+4. Add an ORM dialect profile in `src/generators/ormDialectProfiles.ts`
+5. Add a parser adapter in `src/parsers/adapters/` if reverse import is required
+6. Extend the regression and round-trip tests
 
 Example:
 
@@ -50,7 +56,7 @@ export class MyOrmGenerator implements CodeGenerator {
 }
 ```
 
-4. Add to `codeGeneratorService.ts`:
+4. Register it in the ORM generator map:
 
 ```typescript
 this.generators.set('MyORM', new MyOrmGenerator());
@@ -74,47 +80,39 @@ The webview is built with React and React Flow:
 
 ```
 src/
-├── extension.ts                 # Extension entry point
-├── types/
-│   └── schema.ts               # Core data types
-├── editor/
-│   └── diagramEditorProvider.ts # Custom editor for VS Code
+├── extension.ts                       # VS Code activation, commands, tree view
+├── editor/                            # Custom editor provider + document lifecycle
 ├── generators/
-│   ├── codeGeneratorService.ts
-│   └── orm/
-│       ├── prismaGenerator.ts
-│       ├── typeORMGenerator.ts
-│       ├── sqlalchemyGenerator.ts
-│       ├── hibernateGenerator.ts
-│       └── djangoGenerator.ts
+│   ├── codeGeneratorService.ts        # ORM entity/model generation entry point
+│   ├── ddlGeneratorService.ts         # Database-aware DDL generation
+│   ├── repositoryGeneratorService.ts  # Repository / DAO generation entry point
+│   ├── orm/                           # ORM entity/model generators
+│   └── repository/                    # Repository / DAO generators
 ├── parsers/
-│   └── schemaParserService.ts
-├── types/
-│   ├── schema.ts
-│   ├── umlMetamodel.ts
-│   └── umlConverter.ts
-├── xmi/
-│   ├── xmiExporter.ts
-│   └── xmiImporter.ts
-├── utils/
-│   └── schemaValidator.ts
-├── webview/
-│   ├── DiagramEditor.tsx
-│   ├── EntityNode.tsx
-│   ├── Toolbar.tsx
-│   ├── PropertyPanel.tsx
-│   └── index.tsx
-└── test/
-    ├── schemaValidator.test.ts
-    └── prismaGenerator.test.ts
+│   ├── schemaParserService.ts         # Reverse import registry
+│   └── adapters/                      # ORM-specific parser adapters
+├── shared/
+│   ├── ormCatalog.ts                  # ORM/database metadata catalog
+│   └── contracts/                     # Typed webview messaging contracts
+├── types/                             # ProjectSchema, parsing contracts, UML types
+├── utils/                             # Validation and shared helpers
+├── webview/                           # React + React Flow editor
+├── xmi/                               # XMI import/export
+└── test/                              # Unit, regression, round-trip, integration tests
 ```
 
 ### Testing
 
-Run tests:
+Fast local regression suite:
 
 ```bash
-npm test
+npm run test:local
+```
+
+VS Code extension-host integration suite:
+
+```bash
+npm run test:integration
 ```
 
 ### Building for Release
@@ -122,7 +120,7 @@ npm test
 ```bash
 npm run compile
 npm run build:webview
-npm run package
+npm run package:vsix
 ```
 
 This creates a `.vsix` file that can be distributed.
@@ -155,11 +153,27 @@ This creates a `.vsix` file that can be distributed.
 2. Use inline `style` objects for styling (not TailwindCSS)
 3. State is managed via React `useState` hooks in `DiagramEditor.tsx`
 
-#### Supporting a New Language
+#### Supporting a New Language / Database
 
 1. Add to `TargetLanguage` type in `src/types/schema.ts`
 2. Create new generator(s) in `src/generators/orm/`
-3. Update reverse parser in `src/parsers/schemaParserService.ts`
+3. Update catalog metadata in `src/shared/ormCatalog.ts`
+4. Update reverse parser registration in `src/parsers/schemaParserService.ts`
+
+To add a new database target:
+
+1. Extend `DatabaseType` in `src/types/schema.ts`
+2. Add support rules to `src/shared/ormCatalog.ts`
+3. Add ORM dialect mappings in `src/generators/ormDialectProfiles.ts`
+4. Add DDL dialect mappings in `src/generators/ddlDialectProfiles.ts`
+5. Add regression and DDL tests
+
+To add a repository generation convention:
+
+1. Add repository artifact metadata in `src/shared/ormCatalog.ts`
+2. Create a generator in `src/generators/repository/`
+3. Register it in `src/generators/repositoryGeneratorService.ts`
+4. Add generator regression coverage and VS Code command-flow coverage
 
 ### Performance Tips
 

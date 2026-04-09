@@ -63,11 +63,33 @@
 3. ORM сонгоно (Prisma, TypeORM, SQLAlchemy, Hibernate, Django)
 ```
 
+### Алхам 1b: DDL тусад нь гаргах
+
+```
+1. Ctrl+Shift+P дарна
+2. "UML to ORM: Generate DDL" сонгоно
+3. Language, ORM, Database сонгоно
+4. `.sql` файлаа хадгалах байршил сонгоно
+5. Систем тухайн database-д тохирсон DDL-г тусдаа файл болгон үүсгэнэ
+```
+
+### Алхам 1c: Repository / DAO тусад нь гаргах
+
+```
+1. Ctrl+Shift+P дарна
+2. "UML to ORM: Generate Repository" сонгоно
+3. Language, ORM, Database сонгоно
+4. Repository файлаа хадгалах байршил сонгоно
+5. Систем тухайн ORM-д тохирсон repository/DAO skeleton-г тусдаа файл болгон үүсгэнэ
+```
+
 ### Алхам 2: Generated код үзэх
 
 - Шинэ editor tab нээгдэнэ
 - Таны diagram-аас үүссэн бэлэн код харагдана
 - Код-ыг хуулж, төслөө хаана ч ашиглаж болно
+- Хэрэв `Generate DDL` ашигласан бол `.sql` файл тусдаа нээгдэнэ
+- Хэрэв `Generate Repository` ашигласан бол ORM-д тохирсон repository файл тусдаа нээгдэнэ
 
 ---
 
@@ -81,7 +103,9 @@
    - TypeORM: entity files (.ts)
    - SQLAlchemy: model files (.py)
    - Hibernate: entity classes (.java)
-4. Автоматаар diagram үүснэ
+4. Parser, confidence, diagnostics summary харагдана
+5. Импортолсон `.orm.json` файлаа хадгална
+6. Автоматаар diagram үүснэ
 ```
 
 ---
@@ -128,6 +152,10 @@
    - `Ctrl+Shift+P` → "Generate Code"
    - Prisma сонгоно
    - `schema.prisma` файл үүснэ!
+9. **Generate Repository:**
+   - `Ctrl+Shift+P` → "Generate Repository"
+   - Prisma сонгоно
+   - `blog_repository_postgresql.ts` зэрэг repository файл үүснэ
 
 ---
 

@@ -7,10 +7,14 @@ VS Code extension for designing UML class diagrams visually and generating ORM c
 - Visual UML class diagram editor for `.orm.json` files
 - Forward engineering to `Prisma`, `TypeORM`, `SQLAlchemy`, `Django`, and `Hibernate`
 - Reverse engineering from `.prisma`, `.ts/.js`, `.py`, and `.java` schema/model files
+- Database-aware generation for `PostgreSQL` and `MySQL`
+- Database-specific DDL artifact generation alongside ORM code
+- Repository / DAO skeleton generation for all 5 ORM targets
 - UML-aware relationship editing:
   `association`, `aggregation`, `composition`, `inheritance`, `realization`, `dependency`
 - XMI 2.5.1 export/import through a UML metamodel bridge
 - VS Code custom editor, activity bar project view, save/export/import workflows
+- User-facing `Generate DDL` and `Generate Repository` workflows
 
 ## Architecture
 
@@ -45,13 +49,16 @@ Main flow:
 | Python | Django | Yes | Yes |
 | Java | Hibernate | Yes | Yes |
 
-Reverse parsing is rule-based and best-effort. Common entity/field/relation patterns are supported, but uncommon syntax and framework-specific edge cases may still need manual cleanup after import.
+Reverse parsing is adapter-based and syntax-aware. Prisma uses a dedicated DSL parser, TypeORM uses the TypeScript compiler API, Python imports use CST-backed parsing, and Hibernate imports use Java syntax parsing with annotation-aware extraction.
 
 ## Development
+
+Supported local and CI runtime: `Node.js 20.x`.
 
 Install and build:
 
 ```bash
+nvm use
 npm install
 npm run compile
 npm run build:webview
@@ -69,18 +76,10 @@ Useful commands:
 npm run compile
 npm run lint
 npm run build:webview
+npm run test:local
+npm run test:integration
 npm run preflight
-```
-
-Local verification used in this repo:
-
-```bash
-npx mocha --ui tdd \
-  dist/test/history.test.js \
-  dist/test/prismaGenerator.test.js \
-  dist/test/generatorRegression.test.js \
-  dist/test/schemaValidator.test.js \
-  dist/test/xmiRoundTrip.test.js
+npm run package:vsix
 ```
 
 ## Current Notes
@@ -90,11 +89,16 @@ npx mocha --ui tdd \
 - Generators now use actual primary key names when emitting foreign key references.
 - Django generation preserves non-default primary keys.
 - TypeORM interface generation avoids invalid empty imports.
+- Parser imports now return diagnostics + confidence instead of silent best-effort only.
+- Canonical forward/reverse round-trip regression tests cover all 5 ORMs across PostgreSQL/MySQL.
+- DDL generation is available both through `CodeGeneratorService.generateArtifacts()` and the extension command `Generate DDL`.
+- Repository generation is exposed as a separate `Generate Repository` command and keeps parser/reverse scope unchanged.
+- A GitHub Actions CI workflow now verifies compile, webview build, local tests, VS Code integration tests, and VSIX packaging.
 
 ## Known Limitations
 
-- Reverse parsers use regex/rule-based extraction, not full AST parsing.
-- Automated VS Code integration tests still depend on `vscode-test` runtime availability.
+- Parser coverage is strongest for canonical/generated code and common ORM patterns; advanced handwritten metaprogramming may still import partially with warnings.
+- Automated VS Code integration tests use a pinned `vscode-test` host version and are intended to run on Linux with a display server or `xvfb`.
 - The editor currently focuses on UML class diagrams only.
 
 ## License

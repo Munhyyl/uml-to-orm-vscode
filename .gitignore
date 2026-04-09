@@ -9,3 +9,7 @@ out
 .env.local
 coverage
 .nyc_output
+.codex/
+integration_created.orm.json
+wget-log*
+.eslintcache
