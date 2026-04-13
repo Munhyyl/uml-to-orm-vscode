@@ -1,12 +1,15 @@
 import { ProjectSchema } from '../../types/schema';
 
+type ToolbarGenerationMessage =
+  | { command: 'generateCode'; schema?: ProjectSchema; useCurrentConfig?: boolean }
+  | { command: 'generateDDL'; schema?: ProjectSchema; useCurrentConfig?: boolean }
+  | { command: 'generateRepository'; schema?: ProjectSchema; useCurrentConfig?: boolean };
+
 export type WebviewToExtensionMessage =
   | { command: 'ready' }
   | { command: 'updateSchema'; schema: ProjectSchema }
   | { command: 'saveSchema'; schema: ProjectSchema }
-  | { command: 'generateCode' }
-  | { command: 'generateDDL' }
-  | { command: 'generateRepository' }
+  | ToolbarGenerationMessage
   | { command: 'importSchema' }
   | { command: 'exportXMI' }
   | { command: 'importXMI' }

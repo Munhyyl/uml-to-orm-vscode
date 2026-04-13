@@ -27,6 +27,14 @@ export class DiagramEditorProvider implements vscode.CustomEditorProvider<Diagra
     return this._activeDocument?.uri;
   }
 
+  private updateDocumentSchema(document: DiagramDocument, schema: ProjectSchema): void {
+    document.schema = schema;
+    document.update(schema);
+    this._onDidChangeCustomDocument.fire({
+      document,
+    } as any);
+  }
+
   async openCustomDocument(
     uri: vscode.Uri,
     _openContext: vscode.CustomDocumentOpenContext,
@@ -79,23 +87,37 @@ export class DiagramEditorProvider implements vscode.CustomEditorProvider<Diagra
           } satisfies ExtensionToWebviewMessage);
           break;
         case 'updateSchema':
-          document.schema = typedMessage.schema;
-          document.update(typedMessage.schema);
-          this._onDidChangeCustomDocument.fire({
-            document,
-          } as any);
+          this.updateDocumentSchema(document, typedMessage.schema);
           break;
         case 'saveSchema':
           await document.save();
           break;
         case 'generateCode':
-          await vscode.commands.executeCommand('uml-orm-refactor.generateCode');
+          if (typedMessage.schema) {
+            this.updateDocumentSchema(document, typedMessage.schema);
+          }
+          await vscode.commands.executeCommand('uml-orm-refactor.generateCode', {
+            useCurrentConfig: typedMessage.useCurrentConfig,
+            schemaOverride: typedMessage.schema,
+          });
           break;
         case 'generateDDL':
-          await vscode.commands.executeCommand('uml-orm-refactor.generateDDL');
+          if (typedMessage.schema) {
+            this.updateDocumentSchema(document, typedMessage.schema);
+          }
+          await vscode.commands.executeCommand('uml-orm-refactor.generateDDL', {
+            useCurrentConfig: typedMessage.useCurrentConfig,
+            schemaOverride: typedMessage.schema,
+          });
           break;
         case 'generateRepository':
-          await vscode.commands.executeCommand('uml-orm-refactor.generateRepository');
+          if (typedMessage.schema) {
+            this.updateDocumentSchema(document, typedMessage.schema);
+          }
+          await vscode.commands.executeCommand('uml-orm-refactor.generateRepository', {
+            useCurrentConfig: typedMessage.useCurrentConfig,
+            schemaOverride: typedMessage.schema,
+          });
           break;
         case 'importSchema':
           await vscode.commands.executeCommand('uml-orm-refactor.importSchema');

@@ -21,6 +21,7 @@ import {
   getRepositoryOutputFilters,
   getSupportedDatabases,
   buildRepositoryFileName,
+  normalizeProjectSchema,
   resolveDatabase,
 } from './shared/ormCatalog';
 import { formatParseSummary } from './shared/artifactPresentation';
@@ -38,6 +39,11 @@ const REFACTOR_COMMANDS = {
   exportXMI: 'uml-orm-refactor.exportXMI',
   importXMI: 'uml-orm-refactor.importXMI',
 } as const;
+
+interface GenerationCommandOptions {
+  useCurrentConfig?: boolean;
+  schemaOverride?: ProjectSchema;
+}
 
 function getPrimaryWorkspaceFolder(): vscode.WorkspaceFolder | undefined {
   return vscode.workspace.workspaceFolders?.[0];
@@ -337,8 +343,13 @@ export function activate(context: vscode.ExtensionContext) {
   watcher.onDidDelete(scheduleProjectViewRefresh);
   watcher.onDidChange(scheduleProjectViewRefresh);
 
-  const runGenerationWorkflow = async (mode: 'code' | 'ddl' | 'repository') => {
-    const schema = await resolveSchemaForGeneration(editorProvider);
+  const runGenerationWorkflow = async (
+    mode: 'code' | 'ddl' | 'repository',
+    options: GenerationCommandOptions = {},
+  ) => {
+    const schema = options.schemaOverride
+      ? normalizeProjectSchema(cloneSchema(options.schemaOverride))
+      : await resolveSchemaForGeneration(editorProvider);
     if (!schema) {
       vscode.window.showErrorMessage('No diagram open. Please open a .orm.json file first.');
       return;
@@ -349,7 +360,9 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    const generationSchema = await promptGenerationTarget(schema);
+    const generationSchema = options.useCurrentConfig
+      ? cloneSchema(schema)
+      : await promptGenerationTarget(schema);
     if (!generationSchema) {
       return;
     }
@@ -469,20 +482,20 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand(REFACTOR_COMMANDS.generateCode, async () => {
-      await runGenerationWorkflow('code');
+    vscode.commands.registerCommand(REFACTOR_COMMANDS.generateCode, async (options?: GenerationCommandOptions) => {
+      await runGenerationWorkflow('code', options);
     })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand(REFACTOR_COMMANDS.generateDDL, async () => {
-      await runGenerationWorkflow('ddl');
+    vscode.commands.registerCommand(REFACTOR_COMMANDS.generateDDL, async (options?: GenerationCommandOptions) => {
+      await runGenerationWorkflow('ddl', options);
     })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand(REFACTOR_COMMANDS.generateRepository, async () => {
-      await runGenerationWorkflow('repository');
+    vscode.commands.registerCommand(REFACTOR_COMMANDS.generateRepository, async (options?: GenerationCommandOptions) => {
+      await runGenerationWorkflow('repository', options);
     })
   );
 

@@ -122,6 +122,54 @@ suite('VS Code Command Flow', () => {
     }
   });
 
+  test('generateCode uses the current schema config without prompting when requested', async () => {
+    const schemaUri = vscode.Uri.file(integrationPath('current-config-sample.orm.json'));
+    const outputUri = vscode.Uri.file(integrationPath('generated_current_config.ts'));
+    const baseSchema = JSON.parse(fs.readFileSync(integrationPath('integration-sample.orm.json'), 'utf8'));
+    const currentConfigSchema = {
+      ...baseSchema,
+      config: {
+        ...baseSchema.config,
+        targetLanguage: 'TypeScript',
+        orm: 'TypeORM',
+        database: 'MySQL',
+        projectName: 'current_config_sample',
+      },
+    };
+
+    fs.writeFileSync(schemaUri.fsPath, JSON.stringify(currentConfigSchema, null, 2), 'utf8');
+    try {
+      await vscode.workspace.fs.delete(outputUri);
+    } catch {
+      // ignore
+    }
+
+    let quickPickCalled = false;
+    const restoreQuickPick = stubWindowMethod('showQuickPick', (async () => {
+      quickPickCalled = true;
+      throw new Error('showQuickPick should not be called when current config is requested');
+    }) as any);
+    const restoreSaveDialog = stubWindowMethod('showSaveDialog', (async () => outputUri) as any);
+    const restoreInfo = stubWindowMethod('showInformationMessage', (async () => undefined) as any);
+
+    try {
+      const doc = await vscode.workspace.openTextDocument(schemaUri);
+      await vscode.window.showTextDocument(doc, { preview: false });
+      await vscode.commands.executeCommand('uml-orm-refactor.generateCode', { useCurrentConfig: true });
+
+      await waitForFile(outputUri);
+      const generated = fs.readFileSync(outputUri.fsPath, 'utf8');
+      assert.strictEqual(quickPickCalled, false);
+      assert.ok(generated.includes('// Target database: MySQL'));
+      assert.ok(generated.includes("@Entity()"));
+      assert.ok(generated.includes("type: 'json'"));
+    } finally {
+      restoreQuickPick();
+      restoreSaveDialog();
+      restoreInfo();
+    }
+  });
+
   test('generateDDL writes a SQL file using command prompts', async () => {
     const schemaUri = vscode.Uri.file(integrationPath('integration-sample.orm.json'));
     const outputUri = vscode.Uri.file(integrationPath('generated_postgresql.sql'));

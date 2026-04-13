@@ -41,6 +41,15 @@
   "activationEvents": [
     "workspaceContains:*.orm.json"
   ],
+  "files": [
+    "dist/extension.js",
+    "dist/webview.js",
+    "resources/**",
+    "package.json",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "customEditors": [
@@ -111,21 +120,22 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile && npm run build:webview",
-    "preflight": "npm run compile && npm run build:webview",
+    "vscode:prepublish": "npm run compile && npm run build:extension && npm run build:webview",
+    "preflight": "npm run compile && npm run build:extension && npm run build:webview",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "build:extension": "esbuild src/extension.ts --bundle --platform=node --format=cjs --outfile=dist/extension.js --external:vscode",
     "build:webview": "esbuild src/webview/index.tsx --bundle --outfile=dist/webview.js --external:vscode --loader:.css=text",
     "watch:webview": "esbuild src/webview/index.tsx --bundle --outfile=dist/webview.js --external:vscode --loader:.css=text --watch",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts,tsx",
     "test": "npm run test:integration",
     "test:unit": "npm run test:local",
-    "test:integration": "node ./dist/test/runTest.js",
+    "test:integration": "npm run build:extension && npm run build:webview && node ./dist/test/runTest.js",
     "test:local": "npm run compile && npx mocha --ui tdd \"dist/test/**/*.test.js\" --ignore \"dist/test/**/*.vscode.test.js\"",
-    "package:vsix": "npm run preflight && npm exec -- vsce package",
+    "package:vsix": "npm run preflight && npm exec -- vsce package --no-dependencies",
     "package": "npm run package:vsix",
-    "publish": "npm exec -- vsce publish"
+    "publish": "npm exec -- vsce publish --no-dependencies"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.0",

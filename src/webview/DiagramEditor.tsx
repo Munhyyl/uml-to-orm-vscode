@@ -499,9 +499,8 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
       showToast('VS Code API боломжгүй!', 'error');
       return;
     }
-    postMessage('updateSchema', { schema: appState.schema });
-    postMessage('generateCode', {});
-    showToast(`${appState.schema.config.orm} код үүсгэгдлээ`, 'success');
+    postMessage('generateCode', { schema: appState.schema, useCurrentConfig: true });
+    showToast(`${appState.schema.config.orm} код үүсгэж байна`, 'info');
   }, [appState.schema, showToast, postMessage, getVscodeApi]);
 
   const handleGenerateDDL = useCallback(() => {
@@ -509,8 +508,7 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
       showToast('VS Code API боломжгүй!', 'error');
       return;
     }
-    postMessage('updateSchema', { schema: appState.schema });
-    postMessage('generateDDL', {});
+    postMessage('generateDDL', { schema: appState.schema, useCurrentConfig: true });
     showToast(`${resolveDatabase(appState.schema.config)} DDL үүсгэж байна`, 'info');
   }, [appState.schema, showToast, postMessage, getVscodeApi]);
 
@@ -519,8 +517,7 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
       showToast('VS Code API боломжгүй!', 'error');
       return;
     }
-    postMessage('updateSchema', { schema: appState.schema });
-    postMessage('generateRepository', {});
+    postMessage('generateRepository', { schema: appState.schema, useCurrentConfig: true });
     showToast(`${appState.schema.config.orm} repository үүсгэж байна`, 'info');
   }, [appState.schema, showToast, postMessage, getVscodeApi]);
 
