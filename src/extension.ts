@@ -24,7 +24,7 @@ import {
   normalizeProjectSchema,
   resolveDatabase,
 } from './shared/ormCatalog';
-import { formatParseSummary } from './shared/artifactPresentation';
+import { buildImportNotificationMessage, formatParseSummary } from './shared/artifactPresentation';
 
 const REFACTOR_VIEW_TYPE = 'uml-orm-refactor.diagramEditor';
 const REFACTOR_PROJECT_VIEW_ID = 'uml-orm-refactor.projectView';
@@ -537,16 +537,17 @@ export function activate(context: vscode.ExtensionContext) {
         );
         await vscode.commands.executeCommand('vscode.openWith', targetUri, REFACTOR_VIEW_TYPE);
 
+        const importMessage = buildImportNotificationMessage(summary);
         if (summary.errorCount > 0 || summary.warningCount > 0) {
           const action = await vscode.window.showWarningMessage(
-            `Импорт хийгдлээ: ${summary.summary}`,
-            'Open Diagnostics',
+            `Импорт хийгдлээ. ${importMessage}`,
+            'Оношилгоо харах',
           );
-          if (action === 'Open Diagnostics') {
+          if (action === 'Оношилгоо харах') {
             diagnosticsChannel.show(true);
           }
         } else {
-          vscode.window.showInformationMessage(`Импорт амжилттай: ${summary.summary}`);
+          vscode.window.showInformationMessage(`Импорт амжилттай. ${importMessage}`);
         }
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to import schema: ${error}`);

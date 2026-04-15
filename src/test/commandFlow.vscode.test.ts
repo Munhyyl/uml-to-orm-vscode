@@ -276,8 +276,9 @@ model User {
       await waitForFile(targetUri);
       const imported = JSON.parse(fs.readFileSync(targetUri.fsPath, 'utf8'));
       assert.ok(imported.entities.some((entity: { name: string }) => entity.name === 'User'));
-      assert.ok(warningMessage.includes('confidence'));
-      assert.ok(warningMessage.includes('Prisma (PostgreSQL)'));
+      assert.ok(warningMessage.includes('Итгэлцэл:'));
+      assert.ok(warningMessage.includes('дунд') || warningMessage.includes('бага'));
+      assert.ok(warningMessage.includes('анхааруулга') || warningMessage.includes('алдаа'));
     } finally {
       restoreOpenDialog();
       restoreSaveDialog();

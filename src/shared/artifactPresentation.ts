@@ -32,6 +32,8 @@ export interface ParseSummary {
   errorCount: number;
   warningCount: number;
   infoCount: number;
+  confidence: number;
+  confidenceLabel: 'өндөр' | 'дунд' | 'бага';
 }
 
 export function formatParseSummary(parseResult: ParseResult): ParseSummary {
@@ -65,7 +67,25 @@ export function formatParseSummary(parseResult: ParseResult): ParseSummary {
     errorCount,
     warningCount,
     infoCount,
+    confidence: parseResult.confidence,
+    confidenceLabel,
   };
+}
+
+export function describeParseConfidenceHint(confidenceLabel: 'өндөр' | 'дунд' | 'бага'): string {
+  if (confidenceLabel === 'бага') {
+    return 'Импорт дутуу сэргээгдсэн байж болзошгүй тул диаграмаа нягталж шалгана уу.';
+  }
+  if (confidenceLabel === 'дунд') {
+    return 'Зарим entity болон холбоосыг гараар нягталж шалгах хэрэгтэй.';
+  }
+  return 'Гол бүтэц найдвартай сэргээгдсэн байна.';
+}
+
+export function buildImportNotificationMessage(summary: ParseSummary): string {
+  const confidenceSummary = `Итгэлцэл: ${summary.confidenceLabel} (${summary.confidence.toFixed(2)})`;
+  const issueSummary = `${summary.errorCount} алдаа, ${summary.warningCount} анхааруулга`;
+  return `${confidenceSummary}. ${issueSummary}. ${describeParseConfidenceHint(summary.confidenceLabel)}`;
 }
 
 export function buildIssuePreview(issues: Issue[], limit = 3): string[] {
