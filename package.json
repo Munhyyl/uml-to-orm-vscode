@@ -32,11 +32,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/munkhorgil/uml-orm-refactor.git"
+    "url": "https://github.com/Munhyyl/uml-to-orm-vscode.git"
   },
-  "homepage": "https://github.com/munkhorgil/uml-orm-refactor#readme",
+  "homepage": "https://github.com/Munhyyl/uml-to-orm-vscode#readme",
   "bugs": {
-    "url": "https://github.com/munkhorgil/uml-orm-refactor/issues"
+    "url": "https://github.com/Munhyyl/uml-to-orm-vscode/issues"
   },
   "activationEvents": [
     "workspaceContains:*.orm.json"
