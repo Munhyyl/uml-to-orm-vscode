@@ -10,6 +10,28 @@ out
 coverage
 .nyc_output
 .codex/
+.codex
 integration_created.orm.json
 wget-log*
 .eslintcache
+
+# LaTeX and presentation build artifacts
+docs/latex/build/
+docs/latex/node_modules/
+docs/latex/**/*.aux
+docs/latex/**/*.bbl
+docs/latex/**/*.bcf
+docs/latex/**/*.blg
+docs/latex/**/*.fdb_latexmk
+docs/latex/**/*.fls
+docs/latex/**/*.lof
+docs/latex/**/*.lot
+docs/latex/**/*.out
+docs/latex/**/*.run.xml
+docs/latex/**/*.synctex.gz
+docs/latex/**/*.toc
+docs/latex/**/*.xdv
+
+# Local scratch files
+*.orm.json.backup
+thesis*.pdf

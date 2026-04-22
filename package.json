@@ -1,8 +1,8 @@
 {
-  "name": "uml-orm-refactor",
-  "displayName": "UML to ORM Refactor",
-  "description": "Production-oriented VS Code extension for UML class diagrams, ORM code, repository skeletons, and DDL generation",
-  "version": "0.2.1",
+  "name": "uml-orm-designer",
+  "displayName": "UML to ORM Designer",
+  "description": "Design UML class diagrams and generate ORM models, repositories, and DDL for TypeScript, Python, and Java.",
+  "version": "0.2.2",
   "publisher": "munkhorgil",
   "engines": {
     "node": ">=20 <21",
@@ -28,7 +28,7 @@
     "xmi",
     "vscode-extension"
   ],
-  "author": "M.Munkh-Orgil",
+  "author": "Munkh-orgil Munkhtulga",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -135,7 +135,9 @@
     "test:local": "npm run compile && npx mocha --ui tdd \"dist/test/**/*.test.js\" --ignore \"dist/test/**/*.vscode.test.js\"",
     "package:vsix": "npm run preflight && npm exec -- vsce package --no-dependencies",
     "package": "npm run package:vsix",
-    "publish": "npm exec -- vsce publish --no-dependencies"
+    "publish": "npm exec -- vsce publish --no-dependencies",
+    "public:sync:dry": "bash ./scripts/sync-public.sh --dry-run",
+    "public:sync": "bash ./scripts/sync-public.sh"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.0",

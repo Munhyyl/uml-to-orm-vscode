@@ -1,43 +1,37 @@
-# UML to ORM Refactor
+# UML to ORM Designer
 
-VS Code extension for designing UML class diagrams visually and generating ORM code from a shared intermediate representation.
+Design UML class diagrams in VS Code and generate ORM models, repository skeletons, and database DDL from a shared schema.
 
-## What It Does
+## Highlights
 
 - Visual UML class diagram editor for `.orm.json` files
-- Forward engineering to `Prisma`, `TypeORM`, `SQLAlchemy`, `Django`, and `Hibernate`
-- Reverse engineering from `.prisma`, `.ts/.js`, `.py`, and `.java` schema/model files
-- Database-aware generation for `PostgreSQL` and `MySQL`
-- Database-specific DDL artifact generation alongside ORM code
-- Repository / DAO skeleton generation for all 5 ORM targets
-- UML-aware relationship editing:
-  `association`, `aggregation`, `composition`, `inheritance`, `realization`, `dependency`
-- XMI 2.5.1 export/import through a UML metamodel bridge
-- VS Code custom editor, activity bar project view, save/export/import workflows
-- User-facing `Generate DDL` and `Generate Repository` workflows
+- Forward generation for `Prisma`, `TypeORM`, `SQLAlchemy`, `Django`, and `Hibernate`
+- Reverse import from `.prisma`, `.ts/.js`, `.py`, and `.java` model files
+- Database-aware artifact generation for `PostgreSQL` and `MySQL`
+- DDL generation and Repository/DAO skeleton generation workflows
+- UML-aware relation editing: `association`, `aggregation`, `composition`, `inheritance`, `realization`, `dependency`
+- XMI 2.5.1 export and import
+
+## Quick Start
+
+1. Create or open a `.orm.json` file in VS Code.
+2. Model entities and relationships in the custom diagram editor.
+3. Run commands from the Command Palette:
+
+- `UML to ORM: Generate ORM Code`
+- `UML to ORM: Generate DDL`
+- `UML to ORM: Generate Repository`
+- `UML to ORM: Import Schema from Code`
+- `UML to ORM: Export to XMI (UML 2.5.1)`
+- `UML to ORM: Import from XMI`
 
 ## Architecture
 
-The project is organized around a single JSON-based IR: `ProjectSchema`.
+The extension uses one JSON-based intermediate model: `ProjectSchema`.
 
 ```text
-src/
-├── extension.ts                  # VS Code activation, commands, tree view
-├── editor/                       # Custom editor provider + document lifecycle
-├── webview/                      # React + React Flow diagram editor
-├── domain/schema/                # Pure schema operations and helpers
-├── generators/                   # ORM code generators
-├── parsers/                      # Reverse engineering services
-├── types/                        # IR, UML metamodel, converter types
-├── xmi/                          # XMI import/export
-├── shared/contracts/             # Typed webview messaging contracts
-├── application/state/            # Shared history utilities
-└── test/                         # Unit and regression tests
+Diagram UI -> ProjectSchema -> Generator / Parser / UML Converter -> Code or XMI
 ```
-
-Main flow:
-
-`Diagram UI -> ProjectSchema -> Generator / Parser / UML Converter -> Code or XMI`
 
 ## Supported Targets
 
@@ -82,18 +76,12 @@ npm run preflight
 npm run package:vsix
 ```
 
-## Current Notes
+## Notes
 
-- Undo/redo is backed by a shared history utility and wired into the webview editor flow.
+- Undo/redo is backed by shared history utilities in the webview flow.
 - XMI round-trip behavior is covered by regression tests.
-- Generators now use actual primary key names when emitting foreign key references.
-- Django generation preserves non-default primary keys.
-- TypeORM interface generation avoids invalid empty imports.
-- Parser imports now return diagnostics + confidence instead of silent best-effort only.
-- Canonical forward/reverse round-trip regression tests cover all 5 ORMs across PostgreSQL/MySQL.
-- DDL generation is available both through `CodeGeneratorService.generateArtifacts()` and the extension command `Generate DDL`.
-- Repository generation is exposed as a separate `Generate Repository` command and keeps parser/reverse scope unchanged.
-- A GitHub Actions CI workflow now verifies compile, webview build, local tests, VS Code integration tests, and VSIX packaging.
+- Parser imports return diagnostics and confidence metadata.
+- Canonical forward/reverse regression tests cover all five ORM targets across PostgreSQL and MySQL.
 
 ## Known Limitations
 

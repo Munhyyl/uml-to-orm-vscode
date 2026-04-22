@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2
+
+- Updated Marketplace-facing documentation copy for clearer user onboarding and feature highlights.
+- Aligned extension naming and presentation with `UML to ORM Designer` branding.
+- Refined README structure for a more concise public listing experience.
+
 ## 0.2.1
 
 - Added user-facing `Generate DDL` command flow.
