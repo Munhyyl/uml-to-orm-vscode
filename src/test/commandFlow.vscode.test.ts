@@ -4,10 +4,10 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-const EXTENSION_ID = 'munkhorgil.uml-orm-refactor';
+const EXTENSION_ID = 'munkhorgil.uml-orm-designer';
 const INTEGRATION_ROOT =
   process.env.UML_ORM_INTEGRATION_ROOT ||
-  fs.mkdtempSync(path.join(os.tmpdir(), 'uml-orm-refactor-vscode-fallback-'));
+  fs.mkdtempSync(path.join(os.tmpdir(), 'uml-orm-designer-vscode-fallback-'));
 
 function integrationPath(...segments: string[]): string {
   return path.join(INTEGRATION_ROOT, ...segments);
