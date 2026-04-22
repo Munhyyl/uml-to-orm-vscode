@@ -2,7 +2,7 @@
   "name": "uml-orm-designer",
   "displayName": "UML to ORM Designer",
   "description": "Design UML class diagrams and generate ORM models, repositories, and DDL for TypeScript, Python, and Java.",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "publisher": "munkhorgil",
   "engines": {
     "node": ">=20 <21",

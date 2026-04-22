@@ -45,8 +45,8 @@
       ],
       "methods": [],
       "position": {
-        "x": 120,
-        "y": 100
+        "x": 48.138103802870916,
+        "y": -5.083591350274759
       }
     },
     {
@@ -102,8 +102,8 @@
       ],
       "methods": [],
       "position": {
-        "x": 420,
-        "y": 100
+        "x": 495.62481560492904,
+        "y": -118.46745312362526
       }
     },
     {
@@ -141,8 +141,8 @@
       ],
       "methods": [],
       "position": {
-        "x": 720,
-        "y": 100
+        "x": 870.8000000000008,
+        "y": 10
       }
     },
     {
@@ -171,8 +171,8 @@
       ],
       "methods": [],
       "position": {
-        "x": 280,
-        "y": 330
+        "x": 114,
+        "y": 392
       }
     },
     {
@@ -201,8 +201,8 @@
       ],
       "methods": [],
       "position": {
-        "x": 560,
-        "y": 330
+        "x": 586.9533489270809,
+        "y": 317.40061251689707
       }
     }
   ],
@@ -215,7 +215,8 @@
       "umlType": "association",
       "sourceMultiplicity": "1",
       "targetMultiplicity": "0..*",
-      "onDelete": "Cascade"
+      "onDelete": "Cascade",
+      "relationOwner": "source"
     },
     {
       "id": "r_post_comment",
@@ -225,7 +226,8 @@
       "umlType": "composition",
       "sourceMultiplicity": "1",
       "targetMultiplicity": "0..*",
-      "onDelete": "Cascade"
+      "onDelete": "Cascade",
+      "relationOwner": "source"
     },
     {
       "id": "r_category_post",
@@ -235,7 +237,8 @@
       "umlType": "aggregation",
       "sourceMultiplicity": "1",
       "targetMultiplicity": "0..*",
-      "onDelete": "SetNull"
+      "onDelete": "SetNull",
+      "relationOwner": "source"
     },
     {
       "id": "r_post_tag",
@@ -244,7 +247,8 @@
       "type": "ManyToMany",
       "umlType": "association",
       "sourceMultiplicity": "0..*",
-      "targetMultiplicity": "0..*"
+      "targetMultiplicity": "0..*",
+      "relationOwner": "source"
     }
   ],
   "config": {

@@ -84,6 +84,7 @@ function createEdgeFromRelation(relation: Relation, entities: ClassEntity[]): Ed
     sourceHandle: `source-${sourceSide}`,
     targetHandle: `target-${targetSide}`,
     type: 'umlRelation',
+    interactionWidth: 32,
     data: { relation },
   };
 }
@@ -124,20 +125,47 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
   // ─── ReactFlow ref ────────────────────────────────────────────
   const reactFlowRef = useRef<any>(null);
 
-  const mapSchemaToNodes = useCallback((schema: ProjectSchema): Node[] => (
-    schema.entities.map((entity) => ({
-      id: entity.id,
-      data: {
-        label: entity.name,
-        stereotype: entity.stereotype || 'entity',
-        attributes: entity.attributes,
-        methods: entity.methods || [],
-        onSelect: () => dispatch({ type: 'SELECT_ENTITY', payload: entity.id }),
-      },
-      position: entity.position,
-      type: 'entity',
-    }))
-  ), [dispatch]);
+  const mapSchemaToNodes = useCallback((
+    schema: ProjectSchema,
+    selectedRelationId: string | null = null,
+    selectedEntityId: string | null = null,
+  ): Node[] => {
+    const selectedRelation = selectedRelationId
+      ? schema.relations.find((relation) => relation.id === selectedRelationId)
+      : undefined;
+
+    return schema.entities.map((entity) => {
+      let relationEndpoint: 'source' | 'target' | 'both' | undefined;
+
+      if (selectedRelation) {
+        const isSource = entity.id === selectedRelation.sourceClassId;
+        const isTarget = entity.id === selectedRelation.targetClassId;
+
+        if (isSource && isTarget) {
+          relationEndpoint = 'both';
+        } else if (isSource) {
+          relationEndpoint = 'source';
+        } else if (isTarget) {
+          relationEndpoint = 'target';
+        }
+      }
+
+      return {
+        id: entity.id,
+        data: {
+          label: entity.name,
+          stereotype: entity.stereotype || 'entity',
+          attributes: entity.attributes,
+          methods: entity.methods || [],
+          isAppSelected: selectedEntityId === entity.id,
+          relationEndpoint,
+          onSelect: () => dispatch({ type: 'SELECT_ENTITY', payload: entity.id }),
+        },
+        position: entity.position,
+        type: 'entity',
+      };
+    });
+  }, [dispatch]);
 
   const mapSchemaToEdges = useCallback((schema: ProjectSchema): Edge[] => (
     schema.relations.map((relation) => createEdgeFromRelation(relation, schema.entities))
@@ -148,7 +176,7 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
     if (ent) clipboardCopy(ent);
   }, [appState.selectedEntityId, appState.schema.entities, clipboardCopy]);
 
-  const initialNodes = mapSchemaToNodes(initialSchema);
+  const initialNodes = mapSchemaToNodes(initialSchema, null, null);
   const initialEdges = mapSchemaToEdges(initialSchema);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -157,19 +185,19 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
 
   // ─── Rebuild helper (depends on setNodes/setEdges) ──────────────
   const rebuildNodesEdges = useCallback((schema: ProjectSchema) => {
-    const newNodes = mapSchemaToNodes(schema);
+    const newNodes = mapSchemaToNodes(schema, appState.selectedRelationId, appState.selectedEntityId);
     const newEdges = mapSchemaToEdges(schema);
     setNodes(newNodes);
     setEdges(newEdges);
     setShowWelcome(newNodes.length === 0);
     postMessage('updateSchema', { schema });
-  }, [mapSchemaToNodes, mapSchemaToEdges, setNodes, setEdges, postMessage]);
+  }, [mapSchemaToNodes, mapSchemaToEdges, setNodes, setEdges, postMessage, appState.selectedRelationId, appState.selectedEntityId]);
 
   useEffect(() => {
-    setNodes(mapSchemaToNodes(appState.schema));
+    setNodes(mapSchemaToNodes(appState.schema, appState.selectedRelationId, appState.selectedEntityId));
     setEdges(mapSchemaToEdges(appState.schema));
     setShowWelcome(appState.schema.entities.length === 0);
-  }, [appState.schema, mapSchemaToNodes, mapSchemaToEdges, setNodes, setEdges]);
+  }, [appState.schema, appState.selectedRelationId, appState.selectedEntityId, mapSchemaToNodes, mapSchemaToEdges, setNodes, setEdges]);
 
   const handlePaste = useCallback(() => {
     if (!hasCopied) return;
@@ -224,6 +252,7 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
           stereotype: newEntity.stereotype || 'entity',
           attributes: newEntity.attributes,
           methods: newEntity.methods || [],
+          isAppSelected: true,
           onSelect: () => dispatch({ type: 'SELECT_ENTITY', payload: newEntity.id }),
         },
         position: newEntity.position,
@@ -322,6 +351,12 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
   const handleSelectionChange = useCallback((params: OnSelectionChangeParams) => {
     if (params.nodes.length > 0) {
       dispatch({ type: 'SELECT_ENTITY', payload: params.nodes[0].id });
+      return;
+    }
+
+    if (params.edges.length > 0) {
+      dispatch({ type: 'SELECT_RELATION', payload: params.edges[0].id });
+      return;
     }
   }, [dispatch]);
 
@@ -379,6 +414,7 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
           stereotype: newEntity.stereotype || 'entity',
           attributes: newEntity.attributes,
           methods: newEntity.methods || [],
+          isAppSelected: true,
           onSelect: () => dispatch({ type: 'SELECT_ENTITY', payload: newEntity.id }),
         },
         position: newEntity.position,
@@ -588,6 +624,14 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
     postMessage('importXMI', {});
   }, [showToast, postMessage, getVscodeApi]);
 
+  const selectedRelation = appState.schema.relations.find((relation) => relation.id === appState.selectedRelationId);
+  const selectedRelationSource = selectedRelation
+    ? appState.schema.entities.find((entity) => entity.id === selectedRelation.sourceClassId)
+    : undefined;
+  const selectedRelationTarget = selectedRelation
+    ? appState.schema.entities.find((entity) => entity.id === selectedRelation.targetClassId)
+    : undefined;
+
   return (
     <div
       style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#0b1220', color: '#e5e7eb' }}
@@ -689,7 +733,6 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
         </div>
 
         {(() => {
-          const selectedRelation = appState.schema.relations.find((r) => r.id === appState.selectedRelationId);
           const selectedEntity = !selectedRelation
             ? appState.schema.entities.find((e) => e.id === appState.selectedEntityId) || null
             : null;
@@ -761,6 +804,11 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
       }}>
         <span>{appState.schema.entities.length} entities</span>
         <span>{appState.schema.relations.length} relations</span>
+        {selectedRelation && (
+          <span style={{ color: '#fbbf24' }}>
+            Selected: {selectedRelationSource?.name || '?'} ({selectedRelation.sourceMultiplicity || '?'}) -&gt; {selectedRelationTarget?.name || '?'} ({selectedRelation.targetMultiplicity || '?'}) [{selectedRelation.umlType}]
+          </span>
+        )}
         <span style={{ marginLeft: 'auto' }}>
           {appState.schema.config.orm} / {appState.schema.config.targetLanguage} / {resolveDatabase(appState.schema.config)}
         </span>

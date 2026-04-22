@@ -7,6 +7,8 @@ interface EntityNodeData {
   stereotype?: string;
   attributes: Attribute[];
   methods?: Method[];
+  isAppSelected?: boolean;
+  relationEndpoint?: 'source' | 'target' | 'both';
   onSelect?: () => void;
 }
 
@@ -37,6 +39,16 @@ const HANDLE_STYLE: React.CSSProperties = {
 
 export const EntityNode: React.FC<NodeProps<EntityNodeData>> = ({ data, selected }) => {
   const stereotype = data.stereotype || 'entity';
+  const isEntitySelected = selected || Boolean(data.isAppSelected);
+  const relationEndpoint = data.relationEndpoint;
+  const hasRelationFocus = Boolean(relationEndpoint);
+  const relationBadgeText = relationEndpoint === 'source'
+    ? 'SOURCE'
+    : relationEndpoint === 'target'
+      ? 'TARGET'
+      : relationEndpoint === 'both'
+        ? 'SOURCE + TARGET'
+        : '';
 
   return (
     <div
@@ -52,25 +64,55 @@ export const EntityNode: React.FC<NodeProps<EntityNodeData>> = ({ data, selected
         backgroundColor: '#0f172a',
         color: '#e5e7eb',
         borderRadius: '6px',
-        border: selected ? '2px solid #3b82f6' : '1px solid #374151',
+        border: isEntitySelected
+          ? '2px solid #3b82f6'
+          : hasRelationFocus
+            ? '2px solid #f59e0b'
+            : '1px solid #374151',
         minWidth: '220px',
         maxWidth: '320px',
         cursor: 'pointer',
-        boxShadow: selected ? '0 0 0 1px rgba(59, 130, 246, 0.25)' : '0 1px 4px rgba(0,0,0,0.25)',
+        boxShadow: isEntitySelected
+          ? '0 0 0 1px rgba(59, 130, 246, 0.25), 0 8px 18px rgba(37, 99, 235, 0.28)'
+          : hasRelationFocus
+            ? '0 0 0 1px rgba(245, 158, 11, 0.4), 0 8px 18px rgba(245, 158, 11, 0.22)'
+            : '0 1px 4px rgba(0,0,0,0.25)',
         fontFamily: "'Segoe UI', system-ui, sans-serif",
         overflow: 'hidden',
-        transition: 'border 0.15s ease, box-shadow 0.15s ease',
+        transition: 'border 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease',
+        transform: hasRelationFocus ? 'translateY(-1px)' : 'translateY(0)',
       }}
     >
       {/* ──── Class Name Section ──── */}
       <div
         style={{
-          backgroundColor: '#111827',
+          backgroundColor: hasRelationFocus ? '#1f2937' : '#111827',
           padding: '10px 14px',
           textAlign: 'center',
           borderBottom: '1px solid #374151',
+          position: 'relative',
         }}
       >
+        {relationEndpoint && (
+          <div
+            style={{
+              position: 'absolute',
+              right: '8px',
+              top: '8px',
+              fontSize: '9px',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              color: '#fef3c7',
+              backgroundColor: 'rgba(217, 119, 6, 0.9)',
+              border: '1px solid rgba(251, 191, 36, 0.85)',
+              borderRadius: '999px',
+              padding: '2px 6px',
+              lineHeight: 1.2,
+            }}
+          >
+            {relationBadgeText}
+          </div>
+        )}
         {stereotype && (
           <div
             style={{

@@ -107,12 +107,15 @@ function offsetTowards(fromX: number, fromY: number, toX: number, toY: number, d
   };
 }
 
-function renderEndLabel(x: number, y: number, text: string, key: string) {
+function renderEndLabel(x: number, y: number, text: string, key: string, isSelected = false) {
   return (
     <div
       key={key}
       style={{
         ...END_LABEL_STYLE,
+        backgroundColor: isSelected ? 'rgba(146, 64, 14, 0.92)' : END_LABEL_STYLE.backgroundColor,
+        color: isSelected ? '#fef3c7' : END_LABEL_STYLE.color,
+        border: isSelected ? '1px solid rgba(251, 191, 36, 0.9)' : undefined,
         transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
         zIndex: 30,
       }}
@@ -128,10 +131,14 @@ function renderTerminalSymbol(
   y: number,
   angle: number,
   key: string,
+  isSelected = false,
 ) {
   if (!symbol) {
     return null;
   }
+
+  const symbolStroke = isSelected ? '#fbbf24' : '#f8fafc';
+  const symbolArrowStroke = isSelected ? '#f59e0b' : '#94a3b8';
 
   const baseStyle: React.CSSProperties = {
     position: 'absolute',
@@ -153,8 +160,8 @@ function renderTerminalSymbol(
             width: '12px',
             height: '12px',
             transform: 'rotate(45deg)',
-            backgroundColor: symbol === 'diamond-filled' ? '#f8fafc' : '#0b1220',
-            border: '2px solid #f8fafc',
+            backgroundColor: symbol === 'diamond-filled' ? symbolStroke : '#0b1220',
+            border: `2px solid ${symbolStroke}`,
             boxSizing: 'border-box',
           }}
         />
@@ -169,7 +176,7 @@ function renderTerminalSymbol(
           <polygon
             points="2,10 18,2 18,18"
             fill="#0b1220"
-            stroke="#f8fafc"
+            stroke={symbolStroke}
             strokeWidth="1.7"
             strokeLinejoin="round"
           />
@@ -181,7 +188,7 @@ function renderTerminalSymbol(
   return (
     <div key={key} style={baseStyle}>
       <svg width="18" height="18" viewBox="0 0 18 18">
-        <path d="M3 9 L15 3 M3 9 L15 15" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M3 9 L15 3 M3 9 L15 15" fill="none" stroke={symbolArrowStroke} strokeWidth="1.8" strokeLinecap="round" />
       </svg>
     </div>
   );
@@ -196,6 +203,7 @@ export const UmlRelationEdge: React.FC<EdgeProps<UmlRelationEdgeData>> = ({
   sourcePosition,
   targetPosition,
   data,
+  selected,
 }) => {
   const relation = data?.relation;
 
@@ -215,6 +223,8 @@ export const UmlRelationEdge: React.FC<EdgeProps<UmlRelationEdgeData>> = ({
   });
 
   const visuals = getRelationVisuals(relation);
+  const edgeStroke = selected ? '#f59e0b' : visuals.stroke;
+  const edgeStrokeWidth = selected ? visuals.strokeWidth + 1.2 : visuals.strokeWidth;
   const sourceLabelPoint = offsetTowards(sourceX, sourceY, targetX, targetY, 44);
   const targetLabelPoint = offsetTowards(targetX, targetY, sourceX, sourceY, 44);
   const sourceSymbolPoint = offsetTowards(sourceX, sourceY, targetX, targetY, 18);
@@ -229,25 +239,29 @@ export const UmlRelationEdge: React.FC<EdgeProps<UmlRelationEdgeData>> = ({
         id={id}
         path={edgePath}
         style={{
-          stroke: visuals.stroke,
-          strokeWidth: visuals.strokeWidth,
+          stroke: edgeStroke,
+          strokeWidth: edgeStrokeWidth,
           strokeDasharray: visuals.strokeDasharray,
+          filter: selected ? 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.55))' : undefined,
         }}
       />
       <EdgeLabelRenderer>
         <>
-          {renderTerminalSymbol(visuals.startSymbol, sourceSymbolPoint.x, sourceSymbolPoint.y, angle, `${id}-start-symbol`)}
-          {renderTerminalSymbol(visuals.endSymbol, targetSymbolPoint.x, targetSymbolPoint.y, angle, `${id}-end-symbol`)}
+          {renderTerminalSymbol(visuals.startSymbol, sourceSymbolPoint.x, sourceSymbolPoint.y, angle, `${id}-start-symbol`, selected)}
+          {renderTerminalSymbol(visuals.endSymbol, targetSymbolPoint.x, targetSymbolPoint.y, angle, `${id}-end-symbol`, selected)}
           {showMultiplicity && relation.sourceMultiplicity
-            ? renderEndLabel(sourceLabelPoint.x, sourceLabelPoint.y - 16, relation.sourceMultiplicity, `${id}-source`)
+            ? renderEndLabel(sourceLabelPoint.x, sourceLabelPoint.y - 16, relation.sourceMultiplicity, `${id}-source`, selected)
             : null}
           {showMultiplicity && relation.targetMultiplicity
-            ? renderEndLabel(targetLabelPoint.x, targetLabelPoint.y - 16, relation.targetMultiplicity, `${id}-target`)
+            ? renderEndLabel(targetLabelPoint.x, targetLabelPoint.y - 16, relation.targetMultiplicity, `${id}-target`, selected)
             : null}
           {centerLabel ? (
             <div
               style={{
                 ...CENTER_LABEL_STYLE,
+                backgroundColor: selected ? 'rgba(146, 64, 14, 0.95)' : CENTER_LABEL_STYLE.backgroundColor,
+                border: selected ? '1px solid rgba(251, 191, 36, 0.9)' : CENTER_LABEL_STYLE.border,
+                color: selected ? '#fef3c7' : CENTER_LABEL_STYLE.color,
                 transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
                 zIndex: 32,
               }}

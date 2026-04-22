@@ -35,13 +35,13 @@ Diagram UI -> ProjectSchema -> Generator / Parser / UML Converter -> Code or XMI
 
 ## Supported Targets
 
-| Language | ORM | Forward | Reverse |
-| --- | --- | --- | --- |
-| TypeScript | Prisma | Yes | Yes |
-| TypeScript | TypeORM | Yes | Yes |
-| Python | SQLAlchemy | Yes | Yes |
-| Python | Django | Yes | Yes |
-| Java | Hibernate | Yes | Yes |
+| Language   | ORM        | Forward | Reverse |
+| ---------- | ---------- | ------- | ------- |
+| TypeScript | Prisma     | Yes     | Yes     |
+| TypeScript | TypeORM    | Yes     | Yes     |
+| Python     | SQLAlchemy | Yes     | Yes     |
+| Python     | Django     | Yes     | Yes     |
+| Java       | Hibernate  | Yes     | Yes     |
 
 Reverse parsing is adapter-based and syntax-aware. Prisma uses a dedicated DSL parser, TypeORM uses the TypeScript compiler API, Python imports use CST-backed parsing, and Hibernate imports use Java syntax parsing with annotation-aware extraction.
 

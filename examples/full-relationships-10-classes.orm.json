@@ -27,7 +27,10 @@
         }
       ],
       "methods": [],
-      "position": { "x": 120, "y": 80 }
+      "position": {
+        "x": -54.516208791208825,
+        "y": -39.28956043956046
+      }
     },
     {
       "id": "c_user",
@@ -63,7 +66,10 @@
         }
       ],
       "methods": [],
-      "position": { "x": 380, "y": 80 }
+      "position": {
+        "x": 380,
+        "y": 80
+      }
     },
     {
       "id": "c_profile",
@@ -90,7 +96,10 @@
         }
       ],
       "methods": [],
-      "position": { "x": 650, "y": 80 }
+      "position": {
+        "x": 650,
+        "y": 80
+      }
     },
     {
       "id": "c_role",
@@ -117,7 +126,10 @@
         }
       ],
       "methods": [],
-      "position": { "x": 920, "y": 80 }
+      "position": {
+        "x": 920,
+        "y": 80
+      }
     },
     {
       "id": "c_permission",
@@ -144,7 +156,10 @@
         }
       ],
       "methods": [],
-      "position": { "x": 1190, "y": 80 }
+      "position": {
+        "x": 1190,
+        "y": 80
+      }
     },
     {
       "id": "c_post",
@@ -181,7 +196,10 @@
         }
       ],
       "methods": [],
-      "position": { "x": 270, "y": 340 }
+      "position": {
+        "x": 270,
+        "y": 340
+      }
     },
     {
       "id": "c_comment",
@@ -208,7 +226,10 @@
         }
       ],
       "methods": [],
-      "position": { "x": 530, "y": 340 }
+      "position": {
+        "x": 530,
+        "y": 340
+      }
     },
     {
       "id": "c_category",
@@ -235,7 +256,10 @@
         }
       ],
       "methods": [],
-      "position": { "x": 790, "y": 340 }
+      "position": {
+        "x": 790,
+        "y": 340
+      }
     },
     {
       "id": "c_tag",
@@ -262,7 +286,10 @@
         }
       ],
       "methods": [],
-      "position": { "x": 1060, "y": 340 }
+      "position": {
+        "x": 1060,
+        "y": 340
+      }
     },
     {
       "id": "c_notification_service",
@@ -286,12 +313,18 @@
           "returnType": "void",
           "visibility": "public",
           "parameters": [
-            { "name": "message", "type": "String" }
+            {
+              "name": "message",
+              "type": "String"
+            }
           ],
           "isAbstract": true
         }
       ],
-      "position": { "x": 1330, "y": 340 }
+      "position": {
+        "x": 1330,
+        "y": 340
+      }
     }
   ],
   "relations": [
@@ -303,7 +336,8 @@
       "umlType": "association",
       "sourceMultiplicity": "1",
       "targetMultiplicity": "1",
-      "onDelete": "Cascade"
+      "onDelete": "Cascade",
+      "relationOwner": "source"
     },
     {
       "id": "r_user_post",
@@ -313,7 +347,8 @@
       "umlType": "association",
       "sourceMultiplicity": "1",
       "targetMultiplicity": "0..*",
-      "onDelete": "Restrict"
+      "onDelete": "Restrict",
+      "relationOwner": "source"
     },
     {
       "id": "r_post_comment",
@@ -323,7 +358,8 @@
       "umlType": "composition",
       "sourceMultiplicity": "1",
       "targetMultiplicity": "0..*",
-      "onDelete": "Cascade"
+      "onDelete": "Cascade",
+      "relationOwner": "source"
     },
     {
       "id": "r_category_post",
@@ -333,7 +369,8 @@
       "umlType": "aggregation",
       "sourceMultiplicity": "1",
       "targetMultiplicity": "0..*",
-      "onDelete": "SetNull"
+      "onDelete": "SetNull",
+      "relationOwner": "source"
     },
     {
       "id": "r_post_tag",
@@ -342,7 +379,8 @@
       "type": "ManyToMany",
       "umlType": "association",
       "sourceMultiplicity": "0..*",
-      "targetMultiplicity": "0..*"
+      "targetMultiplicity": "0..*",
+      "relationOwner": "source"
     },
     {
       "id": "r_role_permission",
@@ -351,7 +389,8 @@
       "type": "ManyToMany",
       "umlType": "association",
       "sourceMultiplicity": "0..*",
-      "targetMultiplicity": "0..*"
+      "targetMultiplicity": "0..*",
+      "relationOwner": "source"
     },
     {
       "id": "r_user_role",
@@ -360,33 +399,38 @@
       "type": "ManyToMany",
       "umlType": "association",
       "sourceMultiplicity": "0..*",
-      "targetMultiplicity": "0..*"
+      "targetMultiplicity": "0..*",
+      "relationOwner": "source"
     },
     {
       "id": "r_user_inherits_base",
       "sourceClassId": "c_user",
       "targetClassId": "c_base_entity",
       "type": "OneToOne",
-      "umlType": "inheritance"
+      "umlType": "inheritance",
+      "relationOwner": "none"
     },
     {
       "id": "r_user_realizes_notification",
       "sourceClassId": "c_user",
       "targetClassId": "c_notification_service",
       "type": "OneToOne",
-      "umlType": "realization"
+      "umlType": "realization",
+      "relationOwner": "none"
     },
     {
       "id": "r_post_depends_notification",
       "sourceClassId": "c_post",
       "targetClassId": "c_notification_service",
       "type": "OneToOne",
-      "umlType": "dependency"
+      "umlType": "dependency",
+      "relationOwner": "none"
     }
   ],
   "config": {
     "targetLanguage": "TypeScript",
     "orm": "Prisma",
-    "projectName": "FullRelationshipsSample"
+    "projectName": "FullRelationshipsSample",
+    "database": "PostgreSQL"
   }
 }
