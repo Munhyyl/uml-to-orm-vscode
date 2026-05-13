@@ -13,7 +13,10 @@ import ReactFlow, {
   NodeTypes,
   EdgeTypes,
   OnSelectionChangeParams,
+  getRectOfNodes,
+  getTransformForBounds,
 } from 'reactflow';
+import { toPng } from 'html-to-image';
 import reactFlowStyles from 'reactflow/dist/style.css';
 import { EntityNode } from './EntityNode';
 import { Toolbar } from './Toolbar';
@@ -29,7 +32,7 @@ import {
 } from '../types/schema';
 import { createEntity, createRelation, removeEntities, removeRelations, upsertEntity, upsertRelation } from '../domain/schema/schemaOperations';
 import { useDiagramState, useClipboard, useVscodeMessaging, useConfirmation } from './useDiagramState';
-import { getDefaultDatabase, getSupportedDatabases, resolveDatabase } from '../shared/ormCatalog';
+import { getDefaultDatabase, getSupportedDatabases, resolveDatabase, getOrmsForLanguage } from '../shared/ormCatalog';
 
 const nodeTypes: NodeTypes = {
   entity: EntityNode,
@@ -557,41 +560,27 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
     showToast(`${appState.schema.config.orm} repository үүсгэж байна`, 'info');
   }, [appState.schema, showToast, postMessage, getVscodeApi]);
 
-  const handleChangeOrm = useCallback((orm: OrmType) => {
-    const currentDatabase = resolveDatabase(appState.schema.config);
-    const updatedSchema = {
-      ...appState.schema,
-      config: {
-        ...appState.schema.config,
-        orm,
-        database: getSupportedDatabases(orm).includes(currentDatabase) ? currentDatabase : getDefaultDatabase(orm),
-      },
-    };
-    dispatch({ type: 'SET_SCHEMA', payload: updatedSchema });
-    pushHistory(updatedSchema);
-    postMessage('updateSchema', { schema: updatedSchema });
-  }, [appState.schema, dispatch, pushHistory, postMessage]);
+  const handleChangeConfig = useCallback((updates: Partial<{ orm: OrmType; targetLanguage: TargetLanguage; database: DatabaseType }>) => {
+    const newConfig = { ...appState.schema.config, ...updates };
 
-  const handleChangeLanguage = useCallback((lang: TargetLanguage) => {
-    const updatedSchema = {
-      ...appState.schema,
-      config: {
-        ...appState.schema.config,
-        targetLanguage: lang,
-      },
-    };
-    dispatch({ type: 'SET_SCHEMA', payload: updatedSchema });
-    pushHistory(updatedSchema);
-    postMessage('updateSchema', { schema: updatedSchema });
-  }, [appState.schema, dispatch, pushHistory, postMessage]);
+    if (updates.targetLanguage && !updates.orm) {
+      const newOrms = getOrmsForLanguage(updates.targetLanguage);
+      if (newOrms && !newOrms.includes(newConfig.orm)) {
+        newConfig.orm = newOrms[0];
+      }
+    }
 
-  const handleChangeDatabase = useCallback((database: DatabaseType) => {
+    if (updates.orm || updates.targetLanguage) {
+      const dbChoices = getSupportedDatabases(newConfig.orm);
+      const currentDb = resolveDatabase(newConfig);
+      if (!dbChoices.includes(currentDb)) {
+        newConfig.database = getDefaultDatabase(newConfig.orm);
+      }
+    }
+
     const updatedSchema = {
       ...appState.schema,
-      config: {
-        ...appState.schema.config,
-        database,
-      },
+      config: newConfig,
     };
     dispatch({ type: 'SET_SCHEMA', payload: updatedSchema });
     pushHistory(updatedSchema);
@@ -624,6 +613,55 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
     postMessage('importXMI', {});
   }, [showToast, postMessage, getVscodeApi]);
 
+  const handleExportImage = useCallback(() => {
+    if (!reactFlowRef.current) return;
+    const nodesInfo = reactFlowRef.current.getNodes();
+    if (!nodesInfo || nodesInfo.length === 0) {
+      showToast('Зурагт гаргах өгөгдөл олдсонгүй', 'info');
+      return;
+    }
+
+    const PADDING = 50;
+    const nodesBounds = getRectOfNodes(nodesInfo);
+    const canvasWidth = nodesBounds.width + PADDING * 2;
+    const canvasHeight = nodesBounds.height + PADDING * 2;
+    const transform = getTransformForBounds(
+      nodesBounds,
+      canvasWidth,
+      canvasHeight,
+      0.1,
+      2
+    );
+
+    const viewportEl = document.querySelector('.react-flow__viewport') as HTMLElement | null;
+    if (viewportEl) {
+      toPng(viewportEl, {
+        backgroundColor: '#0b1220', // keeping diagram's dark background
+        width: canvasWidth,
+        height: canvasHeight,
+        style: {
+          width: `${canvasWidth}px`,
+          height: `${canvasHeight}px`,
+          transform: `translate(${transform[0]}px, ${transform[1]}px) scale(${transform[2]})`,
+        },
+      })
+        .then((dataUrl) => {
+          postMessage('saveImage', { data: dataUrl });
+        })
+        .catch((error) => {
+          showToast(`Зураг хөрвүүлэхэд алдаа гарлаа: ${error}`, 'error');
+        });
+    }
+  }, [postMessage, showToast]);
+
+  const handleLivePreview = useCallback(() => {
+    if (!getVscodeApi()?.postMessage) {
+      showToast('VS Code API боломжгүй!', 'error');
+      return;
+    }
+    postMessage('showPreview', {});
+  }, [showToast, postMessage, getVscodeApi]);
+
   const selectedRelation = appState.schema.relations.find((relation) => relation.id === appState.selectedRelationId);
   const selectedRelationSource = selectedRelation
     ? appState.schema.entities.find((entity) => entity.id === selectedRelation.sourceClassId)
@@ -645,6 +683,8 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
         onImportSchema={handleImportSchema}
         onExportXMI={handleExportXMI}
         onImportXMI={handleImportXMI}
+        onExportImage={handleExportImage}
+        onLivePreview={handleLivePreview}
         onUndo={handleUndo}
         onRedo={handleRedo}
         onAutoLayout={handleAutoLayout}
@@ -653,9 +693,9 @@ export const DiagramEditor: React.FC<{ initialSchema: ProjectSchema }> = ({ init
         orm={appState.schema.config.orm}
         language={appState.schema.config.targetLanguage}
         database={resolveDatabase(appState.schema.config)}
-        onChangeOrm={handleChangeOrm}
-        onChangeLanguage={handleChangeLanguage}
-        onChangeDatabase={handleChangeDatabase}
+        onChangeOrm={(orm) => handleChangeConfig({ orm })}
+        onChangeLanguage={(targetLanguage) => handleChangeConfig({ targetLanguage })}
+        onChangeDatabase={(database) => handleChangeConfig({ database })}
       />
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>

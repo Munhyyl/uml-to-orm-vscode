@@ -2,7 +2,7 @@
   "name": "uml-orm-designer",
   "displayName": "UML to ORM Designer",
   "description": "Design UML class diagrams and generate ORM models, repositories, and DDL for TypeScript, Python, and Java.",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "publisher": "munkhorgil",
   "engines": {
     "node": ">=20 <21",
@@ -160,6 +160,7 @@
   "dependencies": {
     "@lezer/common": "^1.5.1",
     "@lezer/python": "^1.1.18",
+    "html-to-image": "^1.11.13",
     "java-parser": "^3.0.1"
   }
 }

@@ -11,6 +11,7 @@ import { ParseResult } from './types/parsing';
 import { projectSchemaToUMLModel } from './types/umlConverter';
 import { exportToXMI } from './xmi/xmiExporter';
 import { importFromXMI } from './xmi/xmiImporter';
+import { OrmPreviewProvider } from './editor/ormPreviewProvider';
 import {
   buildDdlFileName,
   buildGeneratedFileName,
@@ -294,8 +295,14 @@ export function activate(context: vscode.ExtensionContext) {
   const diagnosticsChannel = vscode.window.createOutputChannel('UML to ORM');
   context.subscriptions.push(diagnosticsChannel);
 
+  // Register OrmPreviewProvider
+  const previewProvider = new OrmPreviewProvider();
+  context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider(OrmPreviewProvider.scheme, previewProvider)
+  );
+
   // Register custom editor for .orm.json files
-  const editorProvider = new DiagramEditorProvider(context);
+  const editorProvider = new DiagramEditorProvider(context, previewProvider);
   context.subscriptions.push(
     vscode.window.registerCustomEditorProvider(
       REFACTOR_VIEW_TYPE,

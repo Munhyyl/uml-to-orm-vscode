@@ -6,6 +6,8 @@ import { exportToXMI } from '../xmi/xmiExporter';
 import { ExtensionToWebviewMessage, WebviewToExtensionMessage, isWebviewMessage } from '../shared/contracts/messages';
 import { normalizeProjectSchema } from '../shared/ormCatalog';
 
+import { OrmPreviewProvider } from './ormPreviewProvider';
+
 export class DiagramEditorProvider implements vscode.CustomEditorProvider<DiagramDocument> {
   public static readonly viewType = 'uml-orm-refactor.diagramEditor';
   private readonly webviewScript: string;
@@ -14,7 +16,10 @@ export class DiagramEditorProvider implements vscode.CustomEditorProvider<Diagra
   private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentContentChangeEvent<DiagramDocument>>();
   public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
 
-  constructor(private readonly context: vscode.ExtensionContext) {
+  constructor(
+    private readonly context: vscode.ExtensionContext,
+    private readonly previewProvider: OrmPreviewProvider
+  ) {
     this.webviewScript = context.asAbsolutePath(path.join('dist', 'webview.js'));
   }
 
@@ -30,6 +35,12 @@ export class DiagramEditorProvider implements vscode.CustomEditorProvider<Diagra
   private updateDocumentSchema(document: DiagramDocument, schema: ProjectSchema): void {
     document.schema = schema;
     document.update(schema);
+    
+    // Update live preview if active
+    if (this._activeDocument === document) {
+      this.previewProvider.update(vscode.Uri.parse(`${OrmPreviewProvider.scheme}:preview`), schema);
+    }
+
     this._onDidChangeCustomDocument.fire({
       document,
     } as any);
@@ -88,6 +99,44 @@ export class DiagramEditorProvider implements vscode.CustomEditorProvider<Diagra
           break;
         case 'updateSchema':
           this.updateDocumentSchema(document, typedMessage.schema);
+          break;
+        case 'saveImage':
+          try {
+            const defaultImageUri = vscode.Uri.file('diagram.png');
+            const saveUri = await vscode.window.showSaveDialog({
+              defaultUri: vscode.workspace.workspaceFolders?.[0]
+                ? vscode.Uri.joinPath(vscode.workspace.workspaceFolders[0].uri, 'diagram.png')
+                : defaultImageUri,
+              filters: { 'Images': ['png'] },
+              title: 'Зураг хадгалах',
+            });
+            if (saveUri) {
+              const base64Data = typedMessage.data.replace(/^data:image\/png;base64,/, "");
+              const buffer = Buffer.from(base64Data, 'base64');
+              await vscode.workspace.fs.writeFile(saveUri, buffer);
+              vscode.window.showInformationMessage('Зураг амжилттай хадгалагдлаа!');
+            }
+          } catch (err) {
+            vscode.window.showErrorMessage(`Failed to save image: ${err}`);
+          }
+          break;
+        case 'showPreview':
+          try {
+            const previewUri = vscode.Uri.parse(`${OrmPreviewProvider.scheme}:preview`);
+            this.previewProvider.update(previewUri, document.schema);
+            const doc = await vscode.workspace.openTextDocument(previewUri);
+            // Change language mapping based on schema
+            const langMap: Record<string, string> = {
+              'TypeScript': 'typescript',
+              'Python': 'python',
+              'Java': 'java'
+            };
+            const targetLang = langMap[document.schema.config.targetLanguage] || 'plaintext';
+            vscode.languages.setTextDocumentLanguage(doc, targetLang);
+            await vscode.window.showTextDocument(doc, { preview: true, viewColumn: vscode.ViewColumn.Beside, preserveFocus: true });
+          } catch (err) {
+            vscode.window.showErrorMessage(`Failed to show preview: ${err}`);
+          }
           break;
         case 'saveSchema':
           await document.save();
@@ -150,7 +199,7 @@ export class DiagramEditorProvider implements vscode.CustomEditorProvider<Diagra
             await vscode.window.showTextDocument(xmiDoc, { preview: false, viewColumn: vscode.ViewColumn.Beside });
 
             const xmiSavedName = xmiSaveUri.path.split('/').pop();
-            vscode.window.showInformationMessage(`✅ XMI экспорт хийгдлээ: ${xmiSavedName}`);
+            vscode.window.showInformationMessage(`XMI экспорт хийгдлээ: ${xmiSavedName}`);
           } catch (xmiErr) {
             vscode.window.showErrorMessage(`Failed to export XMI: ${xmiErr}`);
           }

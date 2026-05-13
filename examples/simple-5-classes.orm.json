@@ -45,8 +45,8 @@
       ],
       "methods": [],
       "position": {
-        "x": 48.138103802870916,
-        "y": -5.083591350274759
+        "x": 57.18869938629547,
+        "y": -108.03411611172895
       }
     },
     {
@@ -65,7 +65,7 @@
         },
         {
           "id": "a_post_title",
-          "name": "title",
+          "name": "title11",
           "type": "String",
           "visibility": "private",
           "isPrimary": false,
@@ -141,8 +141,8 @@
       ],
       "methods": [],
       "position": {
-        "x": 870.8000000000008,
-        "y": 10
+        "x": 916.0529779171235,
+        "y": -97.47582255316647
       }
     },
     {
@@ -171,8 +171,8 @@
       ],
       "methods": [],
       "position": {
-        "x": 114,
-        "y": 392
+        "x": 176.2228446360437,
+        "y": 232.4832528421424
       }
     },
     {
@@ -201,8 +201,8 @@
       ],
       "methods": [],
       "position": {
-        "x": 586.9533489270809,
-        "y": 317.40061251689707
+        "x": 730.6315538139456,
+        "y": 223.50068333886742
       }
     }
   ],
@@ -252,8 +252,8 @@
     }
   ],
   "config": {
-    "targetLanguage": "Java",
-    "orm": "Hibernate",
+    "targetLanguage": "Python",
+    "orm": "SQLAlchemy",
     "projectName": "SimpleFiveClasses",
     "database": "PostgreSQL"
   }

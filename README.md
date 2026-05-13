@@ -5,6 +5,8 @@ Design UML class diagrams in VS Code and generate ORM models, repository skeleto
 ## Highlights
 
 - Visual UML class diagram editor for `.orm.json` files
+- **Live Preview:** Real-time, read-only sync of generated ORM algorithms alongside your UML diagram
+- **Export Image:** Download your completed diagrams as high-quality PNG images encompassing all entities
 - Forward generation for `Prisma`, `TypeORM`, `SQLAlchemy`, `Django`, and `Hibernate`
 - Reverse import from `.prisma`, `.ts/.js`, `.py`, and `.java` model files
 - Database-aware artifact generation for `PostgreSQL` and `MySQL`

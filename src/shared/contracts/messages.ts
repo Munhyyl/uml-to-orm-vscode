@@ -13,6 +13,8 @@ export type WebviewToExtensionMessage =
   | { command: 'importSchema' }
   | { command: 'exportXMI' }
   | { command: 'importXMI' }
+  | { command: 'saveImage'; data: string }
+  | { command: 'showPreview' }
   | { command: 'requestConfirmation'; requestId: string; message: string; detail?: string; confirmLabel?: string };
 
 export type ExtensionToWebviewMessage =

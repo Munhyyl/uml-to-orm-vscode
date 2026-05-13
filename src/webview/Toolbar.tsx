@@ -11,6 +11,8 @@ interface ToolbarProps {
   onImportSchema: () => void;
   onExportXMI: () => void;
   onImportXMI: () => void;
+  onExportImage: () => void;
+  onLivePreview: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onAutoLayout: () => void;
@@ -44,6 +46,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onImportSchema,
   onExportXMI,
   onImportXMI,
+  onExportImage,
+  onLivePreview,
   onUndo,
   onRedo,
   onAutoLayout,
@@ -81,9 +85,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '10px'
       }}
     >
-      <div style={{ display: 'flex', gap: '8px' }}>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
         <button
           onClick={onAddEntity}
           style={{ ...baseButton, backgroundColor: '#1d4ed8', borderColor: '#1d4ed8', color: '#ffffff', fontWeight: 600 }}
@@ -106,6 +112,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           style={{ ...baseButton, backgroundColor: '#4f46e5', borderColor: '#4f46e5', color: '#ffffff', fontWeight: 600 }}
         >
           Generate Code
+        </button>
+        <button
+          onClick={onLivePreview}
+          style={{ ...baseButton, backgroundColor: '#0ea5e9', borderColor: '#0ea5e9', color: '#ffffff', fontWeight: 600 }}
+        >
+          Live Preview
         </button>
         <button
           onClick={onGenerateDDL}
@@ -132,6 +144,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           Export XMI
         </button>
         <button
+          onClick={onExportImage}
+          style={{ ...baseButton, backgroundColor: '#cbd5e1', borderColor: '#cbd5e1', color: '#0f172a', fontWeight: 600 }}
+        >
+          Export Image
+        </button>
+        <button
           onClick={onImportXMI}
           style={{ ...baseButton, backgroundColor: '#9333ea', borderColor: '#9333ea', color: '#ffffff', fontWeight: 600 }}
         >
@@ -144,15 +162,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <span style={{ fontSize: '12px', color: '#9ca3af' }}>Language</span>
           <select
             value={language}
-            onChange={(e) => {
-              const newLang = e.target.value as TargetLanguage;
-              onChangeLanguage(newLang);
-              // Автоматаар тухайн хэлний эхний ORM сонгох
-              const newOrms = getOrmsForLanguage(newLang);
-              if (newOrms && !newOrms.includes(orm)) {
-                onChangeOrm(newOrms[0]);
-              }
-            }}
+            onChange={(e) => onChangeLanguage(e.target.value as TargetLanguage)}
             style={selectStyle}
           >
             {getAllTargetLanguages().map((lang) => (
