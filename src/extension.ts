@@ -29,7 +29,7 @@ import { buildImportNotificationMessage, formatParseSummary } from './shared/art
 
 const REFACTOR_VIEW_TYPE = 'uml-orm-refactor.diagramEditor';
 const REFACTOR_PROJECT_VIEW_ID = 'uml-orm-refactor.projectView';
-const DIAGRAMS_LABEL = '📂 Diagrams';
+const DIAGRAMS_LABEL = 'Diagrams';
 const ACTIONS_LABEL = '⚙ Actions';
 const REFACTOR_COMMANDS = {
   openEditor: 'uml-orm-refactor.openEditor',
@@ -201,7 +201,7 @@ class ProjectViewProvider implements vscode.TreeDataProvider<ProjectTreeItem> {
       // Root items
       return [
         new ProjectTreeItem(
-          '✨ New Diagram',
+          ' New Diagram',
           vscode.TreeItemCollapsibleState.None,
           'action',
           { command: REFACTOR_COMMANDS.openEditor, title: 'New Diagram' },
