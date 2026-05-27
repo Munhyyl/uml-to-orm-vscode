@@ -34,8 +34,7 @@ export class HibernateParserAdapter implements SchemaParserAdapter {
   async parse(input: ParserInput) {
     const issues = [] as ReturnType<typeof createParserIssue>[];
     try {
-      const dynamicImport = new Function('specifier', 'return import(specifier);') as <T>(specifier: string) => Promise<T>;
-      const javaParser = await dynamicImport<{ parse: (content: string) => unknown }>('java-parser');
+      const javaParser = await import('java-parser');
       javaParser.parse(input.content);
     } catch (error) {
       issues.push(

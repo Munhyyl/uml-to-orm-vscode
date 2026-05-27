@@ -252,8 +252,8 @@
     }
   ],
   "config": {
-    "targetLanguage": "Python",
-    "orm": "SQLAlchemy",
+    "targetLanguage": "Java",
+    "orm": "Hibernate",
     "projectName": "SimpleFiveClasses",
     "database": "PostgreSQL"
   }
